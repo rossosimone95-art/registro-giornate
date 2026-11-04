@@ -1,0 +1,23 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function email() { return request.auth.token.email.lower(); }
+    function verificato() { return request.auth != null && request.auth.token.email_verified == true; }
+    function proprietario() { return verificato() && email() == 'rosso.simone95@gmail.com'; }
+    function cfg() { return get(/databases/$(database)/documents/config/membri).data; }
+    function membro() { return proprietario() || (verificato() && exists(/databases/$(database)/documents/config/membri) && email() in cfg().emails); }
+    function completo() { return proprietario() || (membro() && email() in cfg().admins); }
+
+    // chi può entrare: lo vedono tutti i membri, lo cambia solo chi ha permessi completi
+    match /config/membri { allow read: if membro(); allow write: if completo(); }
+    // accessi e presenza: ognuno scrive solo i suoi, li legge chi ha permessi completi
+    match /accessi/{uid} { allow read: if completo() || (membro() && request.auth.uid == uid); allow write: if membro() && request.auth.uid == uid; }
+    match /presenza/{uid} { allow read: if completo(); allow write: if membro() && request.auth.uid == uid; }
+    // "Era da un altro cliente": solo permessi completi
+    match /correzioni/{id} { allow read: if membro(); allow write: if completo(); }
+    // giornate private e luoghi nascosti: solo la persona stessa
+    match /data/users/{uid}/{id} { allow read, write: if membro() && request.auth.uid == uid; }
+    // tutto il resto del Registro: tutti i membri
+    match /{coll}/{id} { allow read, write: if membro() && !(coll in ['config', 'accessi', 'presenza', 'correzioni', 'data']); }
+  }
+}

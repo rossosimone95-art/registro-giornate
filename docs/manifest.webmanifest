@@ -1,0 +1,16 @@
+{
+  "name": "Registro Giornate",
+  "short_name": "Registro",
+  "description": "Giornate di lavoro, clienti e agenda di Simone, Papà e Lorenzo",
+  "lang": "it",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#F2F4EF",
+  "theme_color": "#2E6A3E",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

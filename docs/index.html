@@ -1,0 +1,2021 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Registro Giornate</title>
+<meta name="theme-color" content="#2E6A3E">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Registro">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<style>
+body { background: var(--bg, #F2F4EF); padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inset-bottom) }
+#accesso { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; padding: 16px; background: var(--bg, #F2F4EF) }
+#accesso[hidden] { display: none }
+.acc-card { width: min(420px, 100%); background: var(--surface, #fff); border: 1px solid var(--line, #DAE0D6); border-radius: 16px; padding: 24px 20px; display: grid; gap: 12px }
+.acc-card img { width: 64px; height: 64px; border-radius: 14px }
+.acc-card h1 { margin: 0 }
+.acc-body { display: grid; gap: 12px }
+.acc-body p { margin: 0 }
+.acc-google { display: inline-flex; align-items: center; justify-content: center; gap: 10px; width: 100%; padding: 12px 16px; font-size: 1rem }
+.acc-google .g { font-weight: 700; background: #fff; color: #2E6A3E; border-radius: 50%; width: 24px; height: 24px; display: grid; place-items: center }
+.acc-msg { color: var(--crit, #B3261E) }
+.acc-altro summary { cursor: pointer; color: var(--muted, #5D6A60); font-size: .9rem }
+.acc-altro { display: grid; gap: 10px }
+.acc-altro[open] > *:not(summary) { margin-top: 10px }
+.acc-altro input { width: 100%; padding: 9px 10px; border: 1px solid var(--line, #DAE0D6); border-radius: 8px; font: inherit; background: var(--surface, #fff); color: inherit }
+.app-membro { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 8px 0; border-top: 1px solid var(--line, #DAE0D6) }
+.app-mail { flex: 1 1 14rem; font-weight: 600; overflow-wrap: anywhere }
+.app-membro input[type=email] { flex: 1 1 14rem; padding: 7px 10px; border: 1px solid var(--line, #DAE0D6); border-radius: 8px; font: inherit; background: var(--surface, #fff); color: inherit }
+.app-membro select { padding: 6px 8px; border: 1px solid var(--line, #DAE0D6); border-radius: 8px; background: var(--surface, #fff); color: inherit; font: inherit }
+</style>
+<script>
+/* la pagina chiede window.claude.use(...): qui risponde Firebase, appena si è entrati */
+window.__fb = {};
+window.__fbReady = new Promise(function (ok, ko) { window.__fb.resolve = ok; window.__fb.reject = ko; });
+window.claude = { use: function (nome) { return window.__fbReady.then(function (api) { return api.use(nome); }); } };
+</script>
+<script type="module" src="shim.js?v=20261104121337"></script>
+</head>
+<body>
+<div id="accesso"><div class="acc-card">
+  <img src="icon-192.png" alt="" width="64" height="64">
+  <h1>Registro Giornate</h1>
+  <div class="acc-body"><p>Carico…</p></div>
+</div></div>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Instrument+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: registro da campo a colonna singola — riepilogo del mese, poi giornate raggruppate per settimana con barra oraria 5–23 */
+:root {
+  --bg: #F2F4EF; --surface: #FFFFFF; --ink: #17201A; --muted: #5D6A60; --line: #DAE0D6;
+  --accent: #2E6A3E; --accent-soft: #E1EDE2;
+  --bark: #8B5A2B; --shop: #3F6688; --other: #A3ACA4; --road: #C7A04A;
+  --warn: #9A5B12; --warn-soft: #F6EAD6; --crit: #B3261E; --crit-soft: #F8E1DE;
+  --p0: #C2410C; --p1: #7C3AED; --p2: #BE185D; --p3: #0E7490;
+  --f-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body: "Instrument Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0F1411; --surface: #171E19; --ink: #E4EBE3; --muted: #97A499; --line: #29332B;
+  --accent: #74C08A; --accent-soft: #1F3326; --bark: #CB9260; --shop: #7EA6CB; --other: #5F6B61; --road: #D8B663;
+  --warn: #E2A75A; --warn-soft: #33281A; --crit: #F2867D; --crit-soft: #3A1F1C; --p0: #FB923C; --p1: #A78BFA; --p2: #F472B6; --p3: #22D3EE; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #0F1411; --surface: #171E19; --ink: #E4EBE3; --muted: #97A499; --line: #29332B;
+  --accent: #74C08A; --accent-soft: #1F3326; --bark: #CB9260; --shop: #7EA6CB; --other: #5F6B61; --road: #D8B663;
+  --warn: #E2A75A; --warn-soft: #33281A; --crit: #F2867D; --crit-soft: #3A1F1C; --p0: #FB923C; --p1: #A78BFA; --p2: #F472B6; --p3: #22D3EE; color-scheme: dark }
+
+* { box-sizing: border-box }
+body { background: var(--bg); color: var(--ink); font: 15px/1.5 var(--f-body);
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.wrap { max-width: 860px; margin: 0 auto; padding-block: 28px 64px; display: flex; flex-direction: column; gap: 28px }
+h1, h2, h3 { font-family: var(--f-display); margin: 0; text-wrap: balance; letter-spacing: -0.01em }
+h1 { font-size: 1.9rem; font-weight: 700 }
+h2 { font-size: 1.2rem; font-weight: 700 }
+.mono, .num { font-family: var(--f-mono); font-variant-numeric: tabular-nums }
+.muted { color: var(--muted) }
+.label { font-size: .72rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 600 }
+button, select, input { font: inherit; color: inherit }
+button { cursor: pointer }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px }
+
+header.top { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 12px 24px }
+header.top p { margin: 4px 0 0; color: var(--muted); max-width: 52ch }
+.tabs { display: flex; gap: 4px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 4px }
+@media (max-width: 520px) { .top-right, .tabs { width: 100% } .tabs { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)) } .tabs button { padding: 6px 2px !important; font-size: .78rem } }
+.tabs button { border: 0; background: none; padding: 6px 12px; border-radius: 7px; color: var(--muted); font-weight: 500 }
+.tabs button[aria-selected="true"] { background: var(--accent-soft); color: var(--ink) }
+
+.months { display: flex; gap: 6px; flex-wrap: wrap }
+.months button { border: 1px solid var(--line); background: var(--surface); padding: 5px 12px; border-radius: 999px; font-size: .9rem; text-transform: capitalize }
+.months button[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink) }
+
+.stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 12px; overflow: hidden }
+.stats > div { background: var(--surface); padding: 14px 16px; display: flex; flex-direction: column; gap: 2px; min-width: 0 }
+.stats .big { font-family: var(--f-display); font-size: 1.45rem; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1.15 }
+.stats .big small { font-size: .95rem; font-weight: 500; color: var(--muted) }
+@media (max-width: 620px) { .stats { grid-template-columns: repeat(2, minmax(0, 1fr)) } }
+
+#view { display: flex; flex-direction: column; gap: 28px }
+.section { display: flex; flex-direction: column; gap: 12px }
+.section-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap }
+
+.legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: .82rem; color: var(--muted) }
+.legend span { display: inline-flex; align-items: center; gap: 6px }
+.sw { width: 12px; height: 12px; border-radius: 3px; display: inline-block; flex: none }
+.c-cliente { background: var(--accent) } .c-vivaio { background: var(--bark) } .c-acquisti { background: var(--shop) }
+.c-altro { background: repeating-linear-gradient(135deg, var(--other) 0 3px, transparent 3px 6px); box-shadow: inset 0 0 0 1px var(--other) }
+.c-road { background: var(--road); height: 3px; border-radius: 2px; width: 14px }
+
+table.places { width: 100%; border-collapse: collapse; font-size: .93rem }
+table.places td, table.places th { padding: 8px 10px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: middle }
+table.places th { font-weight: 600; font-size: .72rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted) }
+table.places td.r, table.places th.r { text-align: right }
+.tbl { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 12px }
+.pname { display: flex; align-items: center; gap: 8px; min-width: 0 }
+.pname b { font-weight: 600 }
+
+.week { display: flex; flex-direction: column; gap: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; overflow: hidden }
+.week-head { display: flex; justify-content: space-between; gap: 12px; padding: 10px 16px; background: var(--accent-soft); font-size: .88rem }
+.week-head b { font-family: var(--f-display) }
+.day { border-top: 1px solid var(--line) }
+.day:first-of-type { border-top: 0 }
+.day-row { display: grid; grid-template-columns: 6.2rem 7.6rem minmax(0, 1fr) 6.4rem; gap: 12px; align-items: center; width: 100%; padding: 10px 16px; background: none; border: 0; text-align: left }
+.day-row:hover { background: color-mix(in srgb, var(--accent-soft) 45%, transparent) }
+.day-date { font-weight: 600; text-transform: capitalize }
+.day-date small { display: block; font-weight: 400; color: var(--muted); font-size: .8rem }
+.day-span { font-family: var(--f-mono); font-size: .86rem; font-variant-numeric: tabular-nums }
+.day-tot { font-family: var(--f-mono); text-align: right; font-weight: 500; font-variant-numeric: tabular-nums }
+.day.off .day-tot { color: var(--muted); text-decoration: line-through }
+.bar { position: relative; height: 20px; border-radius: 4px; background:
+  repeating-linear-gradient(90deg, transparent 0 calc(100%/18 - 1px), var(--line) calc(100%/18 - 1px) calc(100%/18)); }
+.bar .road { position: absolute; top: 9px; height: 2px; background: var(--road); border-radius: 1px }
+.bar .stop { position: absolute; top: 2px; bottom: 2px; border-radius: 3px; min-width: 2px }
+.bar .off { opacity: .28 }
+.bar.multi { background: none; height: auto; display: flex; flex-direction: column; gap: 2px }
+.lane { display: block }
+.lane-bar { display: block }
+.lane-name b { color: var(--ink); font-weight: 600 }
+.lane-name { display: flex; align-items: center; gap: 2px; font-size: .72rem; color: var(--muted); line-height: 1.3; white-space: nowrap; overflow: hidden }
+.lane-name i { margin-left: 4px } .lane-name i:first-child { margin-left: 0 }
+.bar .with { position: absolute; top: 9px; height: 0; border-top: 2px dotted var(--accent); opacity: .7 }
+.bar .band { position: absolute; top: -1px; bottom: -1px; background: var(--accent-soft); border-top: 1px dashed var(--accent); border-bottom: 1px dashed var(--accent) }
+.pdot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; flex: none; margin-right: 3px; vertical-align: 0 }
+.who.multi { display: flex; flex-wrap: wrap; gap: 0 8px; color: var(--muted); font-weight: 500 }
+.who.multi b { color: var(--ink); font-weight: 600 }
+.person-head { display: flex; align-items: center; gap: 6px; font-weight: 700; margin: 14px 0 6px }
+.person-head:first-child { margin-top: 4px }
+.chi-tag { display: inline-flex; align-items: center; margin-right: 8px; font-weight: 600 }
+ol.legs li.split-mark { list-style: none; margin: 6px 0; padding: 4px 10px; border-radius: 8px; background: var(--warn-soft); color: var(--warn); font-size: .85rem; display: block }
+ol.legs li.branch { list-style: none; display: block; margin: 4px 0 4px 6px; padding: 4px 0 4px 10px; border-left: 3px solid var(--bc) }
+.branch-head { font-size: .85rem; margin-bottom: 4px }
+.branch .legs { margin: 0; padding: 0 }
+.axis { display: grid; grid-template-columns: 6.2rem 7.6rem minmax(0, 1fr) 6.4rem; gap: 12px; padding: 6px 16px 0; font-size: .7rem; color: var(--muted); font-family: var(--f-mono) }
+.axis .ticks { display: flex; justify-content: space-between }
+@media (max-width: 620px) {
+  .day-row { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "d t" "s s" "b b"; row-gap: 6px }
+  .day-row .day-date { grid-area: d } .day-row .day-span { grid-area: s } .day-row .bar { grid-area: b } .day-row .day-tot { grid-area: t }
+  .day-date small { display: inline; margin-left: 6px }
+  .axis { display: none }
+}
+
+.detail { padding: 4px 16px 16px; display: flex; flex-direction: column; gap: 14px }
+.outing { border: 1px solid var(--line); border-radius: 10px; overflow: hidden }
+.outing-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; padding: 8px 12px; background: var(--bg) }
+.pill { font-size: .75rem; padding: 2px 8px; border-radius: 999px; background: var(--warn-soft); color: var(--warn); font-weight: 600 }
+.pill.ok { background: var(--accent-soft); color: var(--accent) }
+.toggle { display: inline-flex; align-items: center; gap: 8px; font-size: .88rem; border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 3px 10px 3px 4px }
+.toggle i { width: 28px; height: 16px; border-radius: 999px; background: var(--other); position: relative; transition: background .15s }
+.toggle i::after { content: ""; position: absolute; top: 2px; left: 2px; width: 12px; height: 12px; border-radius: 50%; background: var(--surface); transition: transform .15s }
+.toggle[aria-checked="true"] i { background: var(--accent) }
+.toggle[aria-checked="true"] i::after { transform: translateX(12px) }
+ol.legs { list-style: none; margin: 0; padding: 4px 12px 8px }
+ol.legs li { display: grid; grid-template-columns: 6.4rem minmax(0, 1fr); gap: 10px; padding: 6px 0; align-items: start }
+ol.legs li.leg { color: var(--muted); font-size: .84rem; padding: 0 }
+ol.legs li.leg .t { text-align: left }
+ol.legs li.leg span:last-child { border-left: 2px dotted var(--road); padding-left: 10px; margin-left: 5px }
+ol.legs .t { font-family: var(--f-mono); font-size: .84rem; font-variant-numeric: tabular-nums }
+.stop-line { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; min-width: 0 }
+.stop-line .nm { font-weight: 600 }
+.stop-line .du { font-family: var(--f-mono); font-size: .84rem; color: var(--muted) }
+.home-line { font-weight: 600; color: var(--muted) }
+a.maps { font-size: .8rem; color: var(--accent); text-decoration: none; white-space: nowrap }
+a.maps:hover { text-decoration: underline }
+.linkish { border: 0; background: none; color: var(--accent); padding: 0; font-size: .8rem }
+.linkish:hover { text-decoration: underline }
+
+.editor { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; width: 100% }
+.editor input { flex: 1 1 12rem; min-width: 0; padding: 6px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface) }
+.editor select { padding: 6px 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface) }
+.btn { border: 1px solid var(--ink); background: var(--ink); color: var(--bg); border-radius: 8px; padding: 7px 14px; font-weight: 600 }
+.btn.ghost { background: var(--surface); color: var(--ink); border-color: var(--line) }
+
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 18px 20px; display: flex; flex-direction: column; gap: 12px }
+.card ol { margin: 0; padding-left: 1.2rem; display: flex; flex-direction: column; gap: 4px; max-width: 62ch }
+.drop { border: 2px dashed var(--line); border-radius: 12px; padding: 24px; text-align: center; display: flex; flex-direction: column; gap: 10px; align-items: center }
+.drop.over { border-color: var(--accent); background: var(--accent-soft) }
+.status { font-size: .9rem }
+.empty { padding: 36px 20px; text-align: center; color: var(--muted); background: var(--surface); border: 1px dashed var(--line); border-radius: 12px }
+.notice { padding: 10px 14px; border-radius: 10px; background: var(--warn-soft); color: var(--warn); font-size: .9rem }
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); gap: 12px }
+.field { display: flex; flex-direction: column; gap: 4px }
+.field input { padding: 7px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface) }
+.chips { display: flex; flex-wrap: wrap; gap: 6px }
+.chip { display: inline-flex; align-items: center; gap: 4px; font-size: .8rem; padding: 2px 10px; border-radius: 999px; background: var(--accent-soft); color: var(--ink) }
+.chip .x { border: 0; background: none; color: var(--muted); padding: 0 0 0 4px; font-size: 1rem; line-height: 1 }
+.chip .x:hover { color: var(--warn) }
+.work-box { display: flex; flex-direction: column; gap: 6px; min-width: 0; padding: 8px 10px; border-left: 3px solid var(--accent); background: var(--bg); border-radius: 0 8px 8px 0 }
+.nota { margin: 0; font-size: .9rem; white-space: pre-wrap; overflow-wrap: anywhere }
+ol.legs li.work { padding-top: 0 }
+.lav-form { display: flex; flex-direction: column; gap: 10px; min-width: 0; padding: 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg) }
+.lav-form .row { display: flex; gap: 8px; flex-wrap: wrap }
+.lav-form input[name="nuova"], .lav-form textarea { width: 100%; padding: 7px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); font: inherit; resize: vertical }
+label.check { display: inline-flex; align-items: center; gap: 6px; font-size: .85rem; padding: 4px 11px 4px 8px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); cursor: pointer; user-select: none }
+label.check input { accent-color: var(--accent); margin: 0 }
+label.check:has(input:checked) { background: var(--accent-soft); border-color: var(--accent) }
+tr.hist > td { background: var(--bg) }
+.hist-box { display: flex; flex-direction: column; gap: 12px; padding: 4px 0 }
+.hist-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px }
+.hist-list li { display: grid; grid-template-columns: 8.5rem minmax(0, 1fr); gap: 10px; align-items: start; font-size: .9rem }
+.hist-list .mono { font-size: .8rem; text-transform: capitalize }
+@media (max-width: 620px) { .hist-list li { grid-template-columns: minmax(0, 1fr) } }
+.tel { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; font-size: .92rem }
+.tel .mono { user-select: all; font-weight: 500 }
+details.lontane > summary { cursor: pointer; list-style: none }
+details.lontane > summary::-webkit-details-marker { display: none }
+details.lontane > summary h2::after { content: " ▸"; color: var(--muted) }
+details.lontane[open] > summary h2::after { content: " ▾" }
+.done-bar { display: flex; flex-wrap: wrap; align-items: end; gap: 8px; padding: 6px 8px; border: 1px dashed var(--line); border-radius: 10px; background: var(--bg) }
+.done-check { font-weight: 600 }
+.oggi-head { flex-direction: row !important; justify-content: space-between; align-items: end; flex-wrap: wrap }
+.oggi-title { font-size: 1.7rem; text-transform: capitalize }
+.item.mine { box-shadow: inset 3px 0 0 var(--accent) }
+.linkname { border: 0; background: none; padding: 0; font: inherit; font-weight: 600; color: var(--ink); display: inline-flex; align-items: center; gap: 8px; text-align: left; text-decoration: underline; text-decoration-color: var(--line); text-underline-offset: 3px }
+.linkname:hover { text-decoration-color: var(--accent) }
+.small-chips { font-size: .78rem; color: var(--muted); margin-top: 2px }
+tr.totrow td { background: var(--bg) }
+.field textarea { padding: 7px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); font: inherit; resize: vertical }
+.online { display: flex; flex-direction: column; gap: 3px; min-width: 0 }
+.online-list { display: flex; flex-wrap: wrap; gap: 4px }
+.who-chip { display: inline-flex; align-items: center; gap: 6px; font-size: .8rem; padding: 3px 9px; border-radius: 999px; background: var(--surface); border: 1px solid var(--line) }
+.who-chip i { width: 7px; height: 7px; border-radius: 50%; background: #2fae5b; flex: none }
+.who-chip.me { background: var(--accent-soft) }
+button.who-chip { cursor: pointer; font: inherit; font-size: .8rem; color: var(--ink) }
+button.who-chip[aria-expanded="true"] { border-color: var(--accent) }
+.pop-acc { margin-top: 6px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); display: flex; flex-direction: column; gap: 8px; max-width: 22rem; box-shadow: 0 6px 18px rgba(0,0,0,.08) }
+.pop-head { display: flex; justify-content: space-between; align-items: center; gap: 8px }
+.pop-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 12px }
+.pop-grid div { display: flex; flex-direction: column }
+.pop-grid b { font-size: 1.25rem; font-family: var(--f-display) }
+.who-chip small { color: var(--muted) }
+table.places td.num, table.places td.r, .day-tot, .week-head b, .stats .big { white-space: nowrap }
+@media (max-width: 620px) { .stats .big { font-size: 1.25rem } }
+.rain-bar { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px 14px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); font-size: .9rem }
+.rain-add { display: inline-flex; gap: 6px; align-items: center }
+.rain-add input { padding: 5px 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); font: inherit; font-size: .88rem }
+.rain-sw { display: flex }
+.day.rain .day-row { cursor: default }
+.rain-ico { font-size: .95em }
+.add-man { align-self: flex-start }
+.corr-form { display: grid; gap: 8px; margin-top: 8px; padding: 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); width: 100% }
+.corr-form select { width: 100% }
+.pos-box { display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; border: 1px dashed var(--line); border-radius: 10px; background: var(--bg) }
+.oggi-btns { display: flex; flex-wrap: wrap; gap: 8px }
+.man-form { gap: 14px }
+.man-step { display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 10px; align-items: start }
+.man-n { width: 26px; height: 26px; border-radius: 50%; background: var(--accent); color: var(--surface); font-weight: 700; display: flex; align-items: center; justify-content: center; font-size: .85rem; margin-top: 2px }
+.man-body { display: flex; flex-direction: column; gap: 8px; min-width: 0 }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 10px; padding: 3px; gap: 3px; background: var(--bg); align-self: flex-start }
+.seg button { border: 0; background: none; padding: 5px 12px; border-radius: 7px; font: inherit; font-size: .88rem; color: var(--muted) }
+.seg button[aria-pressed="true"] { background: var(--surface); color: var(--ink); font-weight: 600; box-shadow: 0 1px 2px rgba(0,0,0,.08) }
+.man-cerca, .man-nuovo input, .man-body textarea { padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); font: inherit; width: 100% }
+.man-picker { display: grid; grid-template-columns: minmax(0, 1fr) 28px; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--surface) }
+.man-list { max-height: 260px; overflow-y: auto; position: relative; -webkit-overflow-scrolling: touch }
+.man-letter { position: sticky; top: 0; background: var(--accent-soft); font-weight: 700; font-size: .78rem; padding: 3px 10px; color: var(--accent) }
+.man-item { display: flex; align-items: center; gap: 8px; width: 100%; text-align: left; border: 0; border-bottom: 1px solid var(--line); background: none; padding: 10px; font: inherit; color: var(--ink) }
+.man-item:active, .man-item:hover { background: var(--bg) }
+.man-az { display: flex; flex-direction: column; align-items: stretch; border-left: 1px solid var(--line); background: var(--bg); max-height: 260px; overflow-y: auto }
+.man-az button { border: 0; background: none; font: inherit; font-size: .72rem; font-weight: 700; color: var(--accent); padding: 3px 0; flex: 1; min-height: 18px }
+.man-nuovo { display: flex; gap: 6px }
+.man-scelto { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border: 2px solid var(--accent); border-radius: 10px; background: var(--accent-soft) }
+.man-ore { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; align-items: end }
+.man-ore .ora { font-family: var(--f-mono); font-size: 1.4rem; text-align: center; padding: 8px 6px; letter-spacing: .05em; width: 100% }
+.man-dur { font-size: 1.1rem; padding: 10px 0 }
+.outing.man { border-color: var(--accent) }
+.top-right { display: flex; flex-wrap: wrap; align-items: end; gap: 10px }
+.io { display: flex; flex-direction: column; gap: 2px }
+.io select { padding: 7px 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); font-weight: 600 }
+.who { display: block; font-size: .72rem; font-weight: 600; color: var(--accent); text-transform: none }
+.field select { padding: 7px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface) }
+.box { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; overflow: hidden }
+.box-head { padding: 8px 16px; background: var(--accent-soft); font-size: .9rem; text-transform: capitalize }
+.box-head.late { background: var(--crit-soft); color: var(--crit); text-transform: none }
+.item { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px 16px; padding: 12px 16px; border-top: 1px solid var(--line); align-items: start }
+.box-head + .item, .box > .item:first-child { border-top: 0 }
+.item.urgent { box-shadow: inset 3px 0 0 var(--crit) }
+.item.done .item-main b { color: var(--muted) }
+.item-main { display: flex; flex-direction: column; gap: 4px; min-width: 0 }
+.item-title { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px }
+.item-side { display: flex; flex-wrap: wrap; align-items: end; justify-content: flex-end; gap: 8px }
+.tag { font-size: .68rem; text-transform: uppercase; letter-spacing: .08em; font-weight: 600; color: var(--shop) }
+.tag.m { color: var(--accent) }
+.pill.crit { background: var(--crit-soft); color: var(--crit) }
+.pill.warn { background: var(--warn-soft); color: var(--warn) }
+.meter { position: relative; display: block; height: 6px; max-width: 22rem; border-radius: 3px; background: var(--line); margin-block: 2px }
+.meter i { display: block; height: 100%; border-radius: 3px }
+.meter i.ok { background: var(--accent) } .meter i.warn { background: var(--road) } .meter i.crit { background: var(--crit) }
+.meter b { position: absolute; top: -3px; width: 2px; height: 12px; background: var(--ink); opacity: .5 }
+.date-pick { display: flex; flex-direction: column; gap: 2px }
+.date-pick input, .date-pick select { padding: 5px 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); font-size: .88rem }
+.btn.sm { padding: 5px 11px; font-size: .85rem }
+.btn.danger { background: var(--crit); border-color: var(--crit); color: var(--surface) }
+.nuova textarea, .nuova input { font: inherit }
+.nuova textarea { padding: 7px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); resize: vertical; width: 100% }
+.row-between { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap }
+@media (max-width: 620px) { .item { grid-template-columns: minmax(0, 1fr) } .item-side { justify-content: flex-start } }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important } }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div>
+      <div class="label">Giardiniere · Cronologia Google Maps</div>
+      <h1>Registro Giornate</h1>
+      <p>Dall'uscita da casa al rientro: soste, tragitti e ore di ogni giornata di lavoro.</p>
+    </div>
+    <div class="top-right">
+    <label class="io"><span class="label">Sono</span><select id="io-sel" data-io="1"></select></label>
+    <div id="online" class="online" hidden></div>
+    <nav class="tabs" role="tablist">
+      <button role="tab" id="tab-oggi" data-tab="oggi" aria-selected="true">Oggi</button>
+      <button role="tab" id="tab-giorni" data-tab="giorni" aria-selected="false">Giornate</button>
+      <button role="tab" id="tab-agenda" data-tab="agenda" aria-selected="false">Agenda</button>
+      <button role="tab" id="tab-luoghi" data-tab="luoghi" aria-selected="false">Clienti</button>
+      <button role="tab" id="tab-importa" data-tab="importa" aria-selected="false">Impostazioni</button>
+    </nav>
+    </div>
+  </header>
+  <main id="view"></main>
+</div>
+
+<script>
+/* Motore: dalla Cronologia (iPhone o Android) alle uscite da casa, raggruppate per giorno. */
+const Engine = (() => {
+  const TZ = "Europe/Rome";
+  const MIN_SOSTA_MIN = 3;        // soste più brevi = semafori / code, ignorate
+  const ORA_SERALE = 19;          // uscite che iniziano da quest'ora = serali (non lavoro di default)
+  const ORE_TRASFERTA = 20;       // uscite più lunghe = viaggio / vacanza
+  const KM_ZONA = 60;             // soste oltre questa distanza da casa = fuori zona
+
+  function geo(v) {
+    if (!v) return null;
+    const s = typeof v === "string" ? v : (v.latLng || "");
+    const m = /(-?\d+(?:\.\d+)?)°?\s*,\s*(-?\d+(?:\.\d+)?)/.exec(s);
+    return m ? { lat: +m[1], lng: +m[2] } : null;
+  }
+  function dist(a, b) {
+    const R = 6371000, r = Math.PI / 180;
+    const dLat = (b.lat - a.lat) * r, dLng = (b.lng - a.lng) * r;
+    const h = Math.sin(dLat / 2) ** 2 + Math.cos(a.lat * r) * Math.cos(b.lat * r) * Math.sin(dLng / 2) ** 2;
+    return 2 * R * Math.asin(Math.sqrt(h));
+  }
+  const dateFmt = new Intl.DateTimeFormat("en-CA", { timeZone: TZ, year: "numeric", month: "2-digit", day: "2-digit" });
+  const hourFmt = new Intl.DateTimeFormat("en-GB", { timeZone: TZ, hour: "2-digit", minute: "2-digit", hour12: false });
+  const localDate = (ms) => dateFmt.format(new Date(ms));
+  const localHour = (ms) => { const [h, m] = hourFmt.format(new Date(ms)).split(":").map(Number); return h + m / 60; };
+
+  function visits(raw) {
+    const arr = Array.isArray(raw) ? raw : (raw && (raw.semanticSegments || raw.timelineObjects)) || [];
+    const out = [];
+    for (const x of arr) {
+      const v = x.visit;
+      if (!v || !v.topCandidate) continue;
+      if (String(v.hierarchyLevel ?? "0") !== "0") continue;
+      const p = geo(v.topCandidate.placeLocation);
+      const s = Date.parse(x.startTime), e = Date.parse(x.endTime);
+      if (!p || !(e > s)) continue;
+      out.push({ s, e, pid: String(v.topCandidate.placeID || `p${p.lat.toFixed(5)}_${p.lng.toFixed(5)}`).replace(/[^A-Za-z0-9_\-.~:@+]/g, "_"), lat: p.lat, lng: p.lng, tipo: v.topCandidate.semanticType || "" });
+    }
+    out.sort((a, b) => a.s - b.s);
+    return out;
+  }
+
+  function moves(raw) {
+    const arr = Array.isArray(raw) ? raw : (raw && raw.semanticSegments) || [];
+    return arr.filter((x) => x.activity).map((x) => ({ s: Date.parse(x.startTime), e: Date.parse(x.endTime) }))
+      .filter((a) => a.e > a.s && a.e - a.s < 6 * 3.6e6).sort((a, b) => a.s - b.s);
+  }
+
+  /** Trova la casa: la posizione dove si passano più notti. */
+  function guessHome(vs) {
+    const tally = new Map();
+    for (const v of vs) {
+      if (v.tipo === "Home" || v.tipo === "INFERRED_HOME" || v.tipo === "HOME") {
+        const k = v.pid; const t = tally.get(k) || { ...v, h: 0 }; t.h += (v.e - v.s); tally.set(k, t);
+      }
+    }
+    let best = null; for (const t of tally.values()) if (!best || t.h > best.h) best = t;
+    return best ? { lat: best.lat, lng: best.lng, raggio: 200 } : null;
+  }
+
+  /** Divide la cronologia in uscite: dall'uscita di casa al rientro. */
+  function process(raw, home) {
+    const vs = visits(raw);
+    if (!home) home = guessHome(vs);
+    if (!home) throw new Error("casa");
+    const isHome = (v) => dist(v, home) <= (home.raggio || 200);
+    const uscite = [];
+    let lastHomeEnd = null, stops = [];
+    const acts = moves(raw);
+    const close = (end, rientro) => {
+      const clean = mergeStops(stops);
+      if (!clean.length) { stops = []; return; }
+      const first = clean[0], last = clean[clean.length - 1];
+      let inizio = lastHomeEnd, fine = end;
+      let pNota = inizio != null && !coversNight(inizio, first.s);
+      let rNota = rientro && fine != null && !coversNight(last.e, fine);
+      // partenza o rientro mancanti: uso il tragitto registrato subito prima/dopo
+      if (!pNota) { const a = acts.filter((a) => a.e <= first.s + 60000 && a.e >= first.s - 30 * 60000).pop(); inizio = a ? a.s : first.s; }
+      if (!rNota) { const a = acts.find((a) => a.s >= last.e - 60000 && a.s <= last.e + 30 * 60000); fine = a ? a.e : last.e; }
+      uscite.push({ inizio, fine, partenzaNota: pNota, rientroNoto: rNota, soste: clean });
+      stops = [];
+    };
+    const coversNight = (a, b) => (b - a) >= 5 * 3.6e6 && localDate(a) !== localDate(b) || (b - a) >= 5 * 3.6e6 && localHour(a) < 3 && localHour(b) > 4;
+    let prevEnd = null;
+    for (const v of vs) {
+      if (isHome(v)) {
+        if (stops.length) close(v.s, true);
+        lastHomeEnd = v.e;
+      } else if (coversNight(v.s, v.e)) {
+        // notte passata altrove: vale come rientro e nuova partenza
+        if (stops.length) close(v.s, false);
+        lastHomeEnd = null; stops = [];
+        prevEnd = v.e; continue;
+      } else {
+        if (stops.length && prevEnd != null && coversNight(prevEnd, v.s)) {
+          // buco notturno senza dati: chiudo l'uscita alla sosta precedente
+          close(null, false); lastHomeEnd = null;
+        }
+        stops.push(v);
+      }
+      prevEnd = v.e;
+    }
+    if (stops.length) close(null, false);
+
+    const giorni = {};
+    for (const u of uscite) {
+      const d = localDate(u.inizio);
+      const ore = (u.fine - u.inizio) / 3.6e6;
+      const lontano = Math.max(...u.soste.map((x) => dist(x, home))) > KM_ZONA * 1000;
+      const giaUscito = !!giorni[d];
+      const h = localHour(u.inizio);
+      u.auto = ore >= ORE_TRASFERTA ? "trasferta" : lontano ? "fuori zona"
+        : (h >= ORA_SERALE || h < 5 || (giaUscito && h >= 18)) ? "serale" : "lavoro";
+      u.distMax = Math.round(Math.max(...u.soste.map((x) => dist(x, home))));
+      u.id = String(u.inizio);
+      (giorni[d] ||= { data: d, uscite: [] }).uscite.push(u);
+    }
+    return { home, giorni: Object.values(giorni).sort((a, b) => a.data.localeCompare(b.data)) };
+  }
+
+  function mergeStops(list) {
+    const out = [];
+    for (const v of list) {
+      const prev = out[out.length - 1];
+      if (prev && (prev.pid === v.pid || dist(prev, v) < 60) && v.s - prev.e < 20 * 60000) {
+        prev.e = Math.max(prev.e, v.e);
+      } else out.push({ ...v });
+    }
+    return out.filter((v) => (v.e - v.s) >= MIN_SOSTA_MIN * 60000)
+      .map(({ s, e, pid, lat, lng }) => ({ s, e, pid, lat: +lat.toFixed(6), lng: +lng.toFixed(6) }));
+  }
+
+  return { process, guessHome, visits, dist, localDate, localHour };
+})();
+if (typeof module !== "undefined") module.exports = Engine;
+
+</script>
+<script>
+(() => {
+const CATS = {
+  cliente:  { label: "Cliente", cls: "c-cliente", color: "var(--accent)" },
+  vivaio:   { label: "Vivaio / azienda", cls: "c-vivaio", color: "var(--bark)" },
+  acquisti: { label: "Acquisti / benzina", cls: "c-acquisti", color: "var(--shop)" },
+  altro:    { label: "Da assegnare", cls: "c-altro", color: "var(--other)" },
+  nascosto: { label: "Nascosto", cls: "c-altro", color: "var(--other)" },
+};
+const AUTO_TXT = { lavoro: "Lavoro", serale: "Uscita serale", trasferta: "Più giorni fuori", "fuori zona": "Fuori zona" };
+const TZ = "Europe/Rome";
+const S = { casa: null, luoghi: {}, giorni: {}, lavori: {}, attivita: null, clienti: {}, richieste: {}, confDel: null, case: {}, persone: null, io: "simone", chi: null, importPer: null, agChi: "tutti", mese: null, meseC: null, scheda: null, tab: "oggi", aperti: new Set(), editing: null, lavEdit: null, storico: null, ready: false };
+const DEFAULT_ATT = ["Taglio erba", "Taglio siepi", "Soffiatura foglie", "Potatura", "Diserbo", "Pulizia aiuole", "Raccolta e smaltimento verde", "Messa a dimora piante", "Concimazione", "Controllo irrigazione"];
+const attivita = () => (S.attivita && S.attivita.length ? S.attivita : DEFAULT_ATT);
+const lavKey = (data, pid) => `${data}__${pid}`;
+// minuti di un insieme di soste, contando una volta sola i periodi sovrapposti (più Cronologie della stessa visita)
+const unione = (iv) => { let tot = 0, cs = null, ce = null;
+  for (const [a, b] of iv.slice().sort((x, y) => x[0] - y[0])) { if (cs === null || a > ce) { if (cs !== null) tot += ce - cs; cs = a; ce = b; } else ce = Math.max(ce, b); }
+  if (cs !== null) tot += ce - cs; return tot / 60000; };
+const aggiungi = (x, s) => { (x.iv || (x.iv = [])).push([s.s, s.e]); x.min = unione(x.iv); };
+const hasWork = (w) => w && ((w.attivita || []).length || w.nota);
+let db = null, dl = null, uid = null;
+// chi è online: visibile solo a chi può modificare la pagina (proprietario ed Editor)
+let room = null, userNs = null, presInviata = "";
+S.admin = false; S.peers = []; S.nomiOnline = {};
+async function initOnline() {
+  try { userNs = await window.claude.use("user"); } catch { userNs = null; }
+  try { S.admin = userNs ? await userNs.canEdit() : false; } catch { S.admin = false; }
+  const attendiDb = () => (db ? seguiAccessi() : setTimeout(attendiDb, 500)); attendiDb();
+  try { room = await window.claude.use("room"); } catch { room = null; }
+  if (!room) return;
+  inviaPresenza();
+  room.onPeers(async (ch) => {
+    S.peers = ch.peers.filter((p) => p.kind === "viewer");
+    if (S.admin && userNs) {
+      const ids = [...new Set(S.peers.map((p) => p.by).filter(Boolean))];
+      if (ids.length) { try { const ps = await userNs.profiles(ids); S.nomiOnline = Object.fromEntries(Object.entries(ps).map(([k, v]) => [k, v.name])); } catch {} }
+    }
+    disegnaOnline();
+  }, () => { S.peers = []; disegnaOnline(); });
+}
+// registro accessi: ognuno scrive solo il proprio; li legge solo chi può modificare la pagina
+S.accessi = {}; S.popOnline = null;
+async function registraAccesso() {
+  try {
+    const ref = db.doc("accessi/" + uid); const snap = await ref.get();
+    const d = snap.exists ? { ...snap.data() } : {};
+    const now = Date.now();
+    const nuova = !d.ultimo || now - d.ultimo > 30 * 60000; // riaperture entro 30 minuti = stessa entrata
+    const storia = (d.storia || []).slice();
+    if (nuova) storia.push(now);
+    await ref.set({ entrate: (d.entrate || 0) + (nuova ? 1 : 0), primo: d.primo || now, ultimo: now, storia: storia.slice(-200), io: S.io });
+  } catch {}
+}
+function seguiAccessi() {
+  if (!db || !S.admin || seguiAccessi.fatto) return; seguiAccessi.fatto = true;
+  db.collection("accessi").limit(100).onSnapshot((q) => { S.accessi = Object.fromEntries(q.docs.map((d) => [d.id, d.data()])); disegnaOnline(); }, () => {});
+}
+function inviaPresenza() {
+  if (!room) return;
+  const v = JSON.stringify({ io: S.io, tab: S.tab });
+  if (v === presInviata) return; presInviata = v;
+  room.presence({ io: S.io, tab: S.tab }).catch(() => {});
+}
+function popAccessi(k) {
+  const a = S.accessi[k], nome = S.popNome || "Questa persona";
+  const fmt = (ms) => new Date(ms).toLocaleString("it-IT", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+  if (!k || !a) return `<div class="pop-acc"><b>${esc(nome)}</b><p class="muted">Nessun accesso registrato ancora: si conta da quando c'è questa funzione.</p><button class="linkish" data-online-chiudi="1">Chiudi</button></div>`;
+  const st = a.storia || [], now = Date.now(), oggi = oggiStr();
+  const nOggi = st.filter((t) => Engine.localDate(t) === oggi).length;
+  const n7 = st.filter((t) => now - t < 7 * 864e5).length, n30 = st.filter((t) => now - t < 30 * 864e5).length;
+  return `<div class="pop-acc">
+    <div class="pop-head"><b>${esc(nome)}</b><button class="linkish" data-online-chiudi="1">Chiudi</button></div>
+    <div class="pop-grid">
+      <div><span class="label">Entrate in tutto</span><b class="num">${a.entrate || 0}</b></div>
+      <div><span class="label">Oggi</span><b class="num">${nOggi}</b></div>
+      <div><span class="label">Ultimi 7 giorni</span><b class="num">${n7}</b></div>
+      <div><span class="label">Ultimi 30 giorni</span><b class="num">${n30}</b></div>
+    </div>
+    <p class="muted" style="margin:0;font-size:.8rem">Prima volta: ${fmt(a.primo)} · ultima: ${fmt(a.ultimo)}. Riaperture entro 30 minuti contano come una sola entrata.</p>
+  </div>`;
+}
+const TAB_NOMI = { oggi: "Oggi", giorni: "Giornate", agenda: "Agenda", luoghi: "Clienti", importa: "Impostazioni" };
+function disegnaOnline() {
+  const box = document.getElementById("online"); if (!box) return;
+  if (!S.admin || !room) { box.hidden = true; return; }
+  const per = new Map(); // una riga per persona, anche se ha più schede aperte
+  for (const p of S.peers) { const k = p.by || p.peer; if (!per.has(k) || p.sameTab) per.set(k, p); }
+  const righe = [...per.values()].sort((a, b) => (b.isMe ? 1 : 0) - (a.isMe ? 1 : 0));
+  box.hidden = false;
+  box.innerHTML = `<span class="label">Online ora</span><span class="online-list">${righe.map((p) => {
+    const nome = (p.by && S.nomiOnline[p.by]) || nomeDi(p.presence && p.presence.io) || "Qualcuno";
+    const dove = TAB_NOMI[p.presence && p.presence.tab] || "";
+    const k = p.by || "";
+    return `<button class="who-chip${p.isMe ? " me" : ""}" data-online="${esc(k)}" data-nome="${esc(nome)}" aria-expanded="${S.popOnline === k}"><i></i>${esc(nome)}${p.isMe ? " (tu)" : ""}${dove ? `<small> · ${dove}</small>` : ""}</button>`;
+  }).join("") || `<span class="muted">solo tu</span>`}</span>${S.popOnline != null ? popAccessi(S.popOnline) : ""}`;
+}
+// giornate: in comune solo le uscite di lavoro; le altre restano private di chi ha caricato la Cronologia
+S.shared = {}; S.privati = {}; S.meteo = {}; S.manuali = {}; S.correzioni = {};
+// correzioni di una singola sosta ("era da un altro cliente"): le fa solo chi ha i permessi da editor
+const corrDi = (p) => { if (p.s == null || !p.pid) return null; const id = corrId(p); return S.correzioni[id] || null; };
+const corrId = (p) => `${dataDi(p.s)}__${p.pid}__${p.s}`;
+const dataDi = (ms) => new Date(ms).toLocaleDateString("sv-SE", { timeZone: TZ });
+// inserimenti a mano: una sosta per documento, unita alla giornata della persona
+function manualeComeUscita(id, m) {
+  const s = Date.parse(m.data + "T" + m.da + ":00" + offset(m.data)), e = Date.parse(m.data + "T" + m.a + ":00" + offset(m.data));
+  return { id: "man-" + id, _man: id, auto: "lavoro", inizio: s, fine: e, partenzaNota: true, rientroNoto: true,
+    soste: [{ s, e, pid: m.pid, lat: m.lat ?? null, lng: m.lng ?? null }] };
+}
+const piove = (d) => !!(S.meteo[d] && S.meteo[d].pioggia);
+async function putPioggia(d, val) {
+  const next = { ...S.meteo }; if (val) next[d] = { data: d, pioggia: true }; else delete next[d];
+  S.meteo = next; render();
+  if (db) { try { val ? await db.doc("meteo/" + d).set({ data: d, pioggia: true }) : await db.doc("meteo/" + d).delete(); } catch (e) { flash("Pioggia non salvata: " + (e.message || e.code)); } }
+  else saveLocal();
+}
+const clean = (u) => { const { _priv, ...r } = u; return r; };
+function merge() {
+  const m = {};
+  for (const [k, g] of Object.entries(S.shared)) m[k] = { ...g, _id: k, persona: g.persona || "simone", uscite: (g.uscite || []).slice() };
+  for (const [k, p] of Object.entries(S.privati)) {
+    const g = m[k] || (m[k] = { data: p.data, persona: p.persona || "simone", _id: k, uscite: [], scelte: {} });
+    g.uscite = [...g.uscite, ...(p.uscite || []).map((u) => ({ ...u, _priv: true }))].sort((a, b) => a.inizio - b.inizio);
+    g.scelte = { ...(p.scelte || {}), ...(g.scelte || {}) };
+  }
+  // di default si lavora tutti insieme: chi non ha la sua Cronologia per quel giorno prende le uscite di lavoro
+  // di chi l'ha caricata (prima Simone), tranne le soste da cui è stato tolto in "Lavori svolti".
+  // Dentro il periodo coperto dalle sue Cronologie, un giorno senza uscite di lavoro vuol dire che era altrove.
+  const span = {}, perData = {};
+  for (const g of Object.values(m)) {
+    const sp = span[g.persona] || (span[g.persona] = { da: g.data, a: g.data });
+    if (g.data < sp.da) sp.da = g.data; if (g.data > sp.a) sp.a = g.data;
+    (perData[g.data] || (perData[g.data] = [])).push(g);
+  }
+  S.realiPerData = Object.fromEntries(Object.entries(perData).map(([d, l]) => [d, l.map((g) => g.persona)]));
+  for (const [d, lista] of Object.entries(perData)) {
+    const src = lista.find((g) => g.persona === "simone" && S.shared[g._id]) || lista.find((g) => S.shared[g._id]);
+    if (!src) continue;
+    src._con = [src.persona];
+    for (const x of persone()) {
+      if (lista.some((g) => g.persona === x.id)) continue;
+      const sp = span[x.id]; if (sp && d >= sp.da && d <= sp.a) continue;
+      const scelte = {}, uscite = [];
+      for (const u of src.uscite) { if (u._priv || !incluso(src, u)) continue;
+        for (const pz of pezziPer(u, x.id, d)) { scelte[pz.id] = true; uscite.push(pz); } }
+      if (!uscite.length) continue;
+      const k = dayId(x.id, d);
+      m[k] = { data: d, persona: x.id, _id: k, _virt: true, _da: src.persona, uscite, scelte };
+      src._con.push(x.id);
+    }
+  }
+  // aggiunge gli inserimenti a mano (se la Cronologia ha già la stessa visita, non li conta due volte)
+  for (const [id, x] of Object.entries(S.manuali)) {
+    for (const per of x.persone || [x.persona || "simone"]) {
+      const k = dayId(per, x.data);
+      const g = m[k] || (m[k] = { data: x.data, persona: per, _id: k, uscite: [], scelte: {} });
+      const u = manualeComeUscita(id, x);
+      const nome = (S.luoghi[x.pid] || {}).nome;
+      const doppio = g.uscite.some((v) => !v._man && (v.soste || []).some((st) => st.e > u.inizio && st.s < u.fine && nome && (S.luoghi[st.pid] || {}).nome === nome));
+      if (!doppio) g.uscite = [...g.uscite, u].sort((a, b) => a.inizio - b.inizio);
+    }
+  }
+  S.giorni = m;
+}
+const assente = (data, pid, per) => ((S.lavori[lavKey(data, pid)] || {}).assenti || []).includes(per);
+// toglie da un'uscita le soste dove la persona non c'era: l'uscita si spezza attorno a quelle soste
+function pezziPer(u, per, data) {
+  const soste = u.soste || [];
+  if (!soste.some((s) => assente(data, s.pid, per))) return [{ ...u, id: u.id + "~" + per }];
+  const pezzi = []; let cur = [];
+  soste.forEach((s, i) => { if (assente(data, s.pid, per)) { if (cur.length) pezzi.push(cur); cur = []; } else cur.push(i); });
+  if (cur.length) pezzi.push(cur);
+  const last = soste.length - 1;
+  return pezzi.map((idx, j) => { const a = idx[0], b = idx[idx.length - 1];
+    return { ...u, id: `${u.id}~${per}~${j}`, soste: idx.map((i) => soste[i]), inizio: a === 0 ? u.inizio : soste[a].s, fine: b === last ? u.fine : soste[b].e,
+      partenzaNota: a === 0 && u.partenzaNota, rientroNoto: b === last && u.rientroNoto }; });
+}
+const privRef = (id) => db.doc("data/users/" + uid + "/p-" + id);
+async function scriviGiorno(id, data, persona, shU, prU, scelte) {
+  shU = shU.map(clean); prU = prU.map(clean);
+  if (!db || !uid) { shU = [...shU, ...prU].sort((a, b) => a.inizio - b.inizio); prU = []; }
+  const sh = { ...S.shared }, pr = { ...S.privati };
+  if (shU.length) sh[id] = { data, persona, uscite: shU, scelte }; else delete sh[id];
+  if (prU.length) pr[id] = { data, persona, uscite: prU, scelte }; else delete pr[id];
+  S.shared = sh; S.privati = pr; merge();
+  if (!db) { saveLocal(); return; }
+  if (shU.length) await db.doc("giorni/" + id).set({ data, persona, uscite: shU, scelte }); else await db.doc("giorni/" + id).delete();
+  if (uid) { if (prU.length) await privRef(id).set({ data, persona, uscite: prU, scelte }); else await privRef(id).delete(); }
+}
+function dividi(g, scelte) {
+  const probe = { data: g.data, scelte };
+  const sh = [], pr = [];
+  for (const u of g.uscite) if (!u._man) (incluso(probe, clean(u)) ? sh : pr).push(u);
+  return [sh, pr];
+}
+S.nascosti = {}; // luoghi nascosti: privati, per persona (data/users/<id>/nascosti)
+const vicinoNascosto = (p) => Object.entries(S.nascosti).some(([id, x]) => id === p.pid || Engine.dist(p, x) < 80);
+const togliNascoste = (uscite) => uscite.map((u) => ({ ...u, soste: (u.soste || []).filter((s) => !vicinoNascosto(s)) }));
+
+/* ---------- formati ---------- */
+const fmtT = new Intl.DateTimeFormat("it-IT", { timeZone: TZ, hour: "2-digit", minute: "2-digit" });
+const hhmm = (ms) => fmtT.format(new Date(ms));
+// ore e minuti scritti per esteso: "10 h 54 min" invece di "10,9 h"
+const dur = (min) => { min = Math.round(min); const h = Math.floor(min / 60), m = min % 60; return h ? (m ? `${h} h ${m} min` : `${h} h`) : `${m} min`; };
+const ore = (min) => dur(min);
+const oreCsv = (min) => { min = Math.round(min); return `${Math.floor(min / 60)}:${String(min % 60).padStart(2, "0")}`; };
+const dLong = (d) => new Date(d + "T12:00:00").toLocaleDateString("it-IT", { weekday: "short", day: "numeric", month: "short" });
+const wday = (d) => new Date(d + "T12:00:00").getDay();
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const mapsUrl = (p) => `https://www.google.com/maps/search/?api=1&query=${p.lat},${p.lng}` + (p.pid && p.pid.startsWith("ChIJ") ? `&query_place_id=${p.pid}` : "");
+const DEFAULT_PERSONE = [{ id: "simone", nome: "Simone" }, { id: "papa", nome: "Papà" }, { id: "fratello", nome: "Fratello" }];
+const persone = () => (S.persone && S.persone.length ? S.persone : DEFAULT_PERSONE);
+const nomeDi = (id) => (persone().find((x) => x.id === id) || { nome: id || "—" }).nome;
+const casaDi = (id) => S.case[id || "simone"] || null;
+const casaDoc = (id) => (id === "simone" ? "casa" : "casa-" + id);
+const dayId = (persona, data) => (persona === "simone" ? data : `${persona}__${data}`);
+// se chi guarda non ha ancora giornate sue, mostra quelle di tutti
+const vista = () => S.chi || (Object.values(S.giorni).some((g) => g.persona === S.io) ? S.io : "tutti");
+const giorniVisti = () => Object.values(S.giorni).filter((g) => vista() === "tutti" ? !g._virt : g.persona === vista());
+// per conteggi su luoghi e clienti: una sola volta per visita, non una per persona
+const giorniReali = () => Object.values(S.giorni).filter((g) => !g._virt);
+const kmCasa = (p) => (p.lat == null) ? "inserito a mano" : casaDi(S.io) ? (Engine.dist(p, casaDi(S.io)) / 1000).toLocaleString("it-IT", { maximumFractionDigits: 1 }) + " km da casa" : "";
+const selPersona = (id, name, val, extra = "") => `<select id="${id}" name="${name}" ${extra}>${persone().map((x) => `<option value="${x.id}" ${x.id === val ? "selected" : ""}>${esc(x.nome)}</option>`).join("")}</select>`;
+
+/* ---------- luoghi ---------- */
+function luogo(p) {
+  if (vicinoNascosto(p)) return { nome: "Nascosto", cat: "nascosto", id: p.pid, named: false };
+  const c = corrDi(p);
+  if (c && c.nome) { const e = Object.entries(S.luoghi).find(([, x]) => x.nome === c.nome);
+    return { nome: c.nome, cat: (e && e[1].categoria) || "cliente", id: e ? e[0] : p.pid, named: true, corretto: true }; }
+  let l = S.luoghi[p.pid];
+  if (!l || !l.nome) {
+    let best = null, bd = 80;
+    for (const [id, x] of Object.entries(S.luoghi)) {
+      if (!x.nome || x.lat == null) continue;
+      const d = Engine.dist(p, x); if (d < bd) { bd = d; best = { ...x, id }; }
+    }
+    if (best) return { nome: best.nome, cat: best.categoria || "altro", id: best.id, named: true };
+  }
+  return l && l.nome ? { nome: l.nome, cat: l.categoria || "altro", id: p.pid, named: true }
+    : { nome: "Sosta senza nome", cat: "altro", id: p.pid, named: false };
+}
+
+const sosteDi = (u) => (u.soste || []).filter((s) => luogo(s).cat !== "nascosto");
+
+// le uscite serali (dopo il rientro a casa) non compaiono, salvo se attivate a mano
+const usciteDi = (g) => (g.uscite || []).filter((u) => !(u.auto === "serale" && !(g.scelte && g.scelte[u.id] === true)));
+
+/* ---------- conteggi ---------- */
+function incluso(g, u) {
+  if (u._man) return true;
+  if (u._priv) return false;
+  const sc = g.scelte && g.scelte[u.id];
+  if (sc === true || sc === false) return sc;
+  // trasferte da un cliente (es. Monaco) contano come lavoro
+  if ((u.auto === "fuori zona" || u.auto === "trasferta") && (u.soste || []).some((s) => luogo(s).cat === "cliente")) return true;
+  return u.auto === "lavoro" && wday(g.data) !== 0;
+}
+function statDay(g) {
+  let fuori = 0, soste = 0, prima = null, ultima = null;
+  for (const u of usciteDi(g)) {
+    if (!incluso(g, u)) continue;
+    fuori += (u.fine - u.inizio) / 60000;
+    for (const s of sosteDi(u)) soste += (Math.min(s.e, u.fine) - Math.max(s.s, u.inizio)) / 60000;
+    prima = prima == null ? u.inizio : Math.min(prima, u.inizio);
+    ultima = ultima == null ? u.fine : Math.max(ultima, u.fine);
+  }
+  return { fuori, soste, strada: Math.max(0, fuori - soste), prima, ultima, lavorato: fuori > 0 };
+}
+const monthsOf = () => [...new Set(giorniVisti().map((g) => g.data.slice(0, 7)))].sort();
+
+/* ---------- archivio ---------- */
+const LS = "registro-giornate-v1";
+function saveLocal() { try { localStorage.setItem(LS, JSON.stringify({ luoghi: S.luoghi, giorni: S.shared, lavori: S.lavori, meteo: S.meteo, manuali: S.manuali, correzioni: S.correzioni, attivita: S.attivita, clienti: S.clienti, richieste: S.richieste, case: S.case, persone: S.persone })); } catch {} }
+function loadLocal() { try { const x = JSON.parse(localStorage.getItem(LS) || "null"); if (x) { if (x.casa && !x.case) x.case = { simone: x.casa }; Object.assign(S, x); S.shared = S.giorni || {}; merge(); } } catch {} }
+
+// i dati con una data si caricano a trimestri: ogni blocco ha il suo limite di 1000 documenti
+const DA_DATA = "2026-01-01";
+function trimestri() {
+  const out = []; const now = new Date(); const fine = new Date(now.getFullYear(), now.getMonth() + 4, 1);
+  let y = +DA_DATA.slice(0, 4), m = 0;
+  while (new Date(y, m, 1) < fine) { const a = `${y}-${String(m + 1).padStart(2, "0")}-01`; m += 3; if (m >= 12) { m -= 12; y++; } out.push([a, `${y}-${String(m + 1).padStart(2, "0")}-01`]); }
+  return out;
+}
+function perTrimestre(coll, onDocs) {
+  const parts = {}; const qs = trimestri();
+  const emit = () => onDocs(Object.values(parts).flat());
+  qs.forEach(([a, b]) => {
+    const q = db.collection(coll).where("data", ">=", a).where("data", "<", b).limit(1000);
+    q.onSnapshot((snap) => { parts[a] = snap.docs; emit(); }, () => { parts[a] = parts[a] || []; emit(); });
+  });
+}
+async function initStore() {
+  try { db = await (window.claude && window.claude.use ? window.claude.use("db") : null); } catch { db = null; }
+  try { dl = await (window.claude && window.claude.use ? window.claude.use("downloads") : null); } catch { dl = null; }
+  if (!db) { loadLocal(); try { S.nascosti = JSON.parse(localStorage.getItem("rg-nascosti") || "{}"); } catch {} S.ready = true; render(); return; }
+  try { const user = await window.claude.use("user"); uid = user ? await user.id() : null; } catch { uid = null; }
+  if (uid) registraAccesso();
+  if (uid) {
+    db.doc("data/users/" + uid + "/nascosti").onSnapshot((d) => { S.nascosti = d.exists ? (d.data().luoghi || {}) : {}; render(); }, () => {});
+    perTrimestre("data/users/" + uid, (docs) => { const pr = {}; for (const d of docs) if (d.id.startsWith("p-")) pr[d.id.slice(2)] = d.data(); S.privati = pr; merge(); render(); });
+  }
+  db.collection("clienti").limit(1000).onSnapshot((q) => { S.clienti = Object.fromEntries(q.docs.map((d) => [d.id, d.data()])); render(); }, () => {});
+  db.collection("richieste").limit(1000).onSnapshot((q) => { S.richieste = Object.fromEntries(q.docs.map((d) => [d.id, d.data()])); render(); }, () => {});
+  perTrimestre("manuali", (docs) => { S.manuali = Object.fromEntries(docs.map((d) => [d.id, d.data()])); merge(); render(); });
+  perTrimestre("correzioni", (docs) => { S.correzioni = Object.fromEntries(docs.map((d) => [d.id, d.data()])); render(); });
+  perTrimestre("meteo", (docs) => { S.meteo = Object.fromEntries(docs.map((d) => [d.id, d.data()])); render(); });
+  perTrimestre("lavori", (docs) => { S.lavori = Object.fromEntries(docs.map((d) => [d.id, d.data()])); merge(); render(); });
+  let pending = 3; const done = () => { if (--pending <= 0 && !S.ready) { S.ready = true; } render(); };
+  db.collection("impostazioni").limit(100).onSnapshot((q) => {
+    const m = Object.fromEntries(q.docs.map((d) => [d.id, d.data()]));
+    S.attivita = (m.attivita && m.attivita.lista) || null;
+    S.persone = (m.persone && m.persone.lista) || null;
+    const c = {}; for (const [k, v] of Object.entries(m)) { if (k === "casa") c.simone = v; else if (k.startsWith("casa-")) c[k.slice(5)] = v; }
+    S.case = c; done();
+  }, () => done());
+  db.collection("luoghi").limit(1000).onSnapshot((q) => { S.luoghi = Object.fromEntries(q.docs.map((d) => [d.id, d.data()])); merge(); done(); }, () => done());
+  let primo = true;
+  perTrimestre("giorni", (docs) => { S.shared = Object.fromEntries(docs.map((d) => [d.id, d.data()])); merge(); if (primo) { primo = false; done(); } else render(); });
+}
+async function salvaNascosti(next) {
+  S.nascosti = next; render();
+  if (db && uid) { try { await db.doc("data/users/" + uid + "/nascosti").set({ luoghi: next }); } catch (e) { flash("Luogo nascosto non salvato: " + (e.message || e.code)); } }
+  else { try { localStorage.setItem("rg-nascosti", JSON.stringify(next)); } catch {} }
+}
+async function nascondi(pid, nome, lat, lng) {
+  await salvaNascosti({ ...S.nascosti, [pid]: { nome: nome || "Luogo", lat, lng } });
+  // toglie le soste dai dati in comune (solo dalle giornate di chi nasconde)
+  const miei = giorniReali().filter((g) => g.persona === S.io && (g.uscite || []).some((u) => (u.soste || []).some(vicinoNascosto)));
+  for (const g of miei) {
+    const uscite = togliNascoste(g.uscite.filter((u) => !u._man));
+    try { await scriviGiorno(g._id, g.data, g.persona, uscite.filter((u) => !u._priv), uscite.filter((u) => u._priv), g.scelte || {}); } catch {}
+  }
+  if (S.luoghi[pid]) { const next = { ...S.luoghi }; delete next[pid]; S.luoghi = next; if (db) { try { await db.doc("luoghi/" + pid).delete(); } catch {} } else saveLocal(); }
+  render(); flash(`${nome || "Luogo"} nascosto: ${miei.length} giornate ripulite. Solo tu lo vedi in Impostazioni.`);
+}
+async function putLuogo(pid, patch) {
+  const next = { ...(S.luoghi[pid] || {}), ...patch };
+  S.luoghi = { ...S.luoghi, [pid]: next }; render();
+  if (db) { try { await db.doc("luoghi/" + pid).set(next); } catch (e) { flash("Non sono riuscito a salvare il nome: " + (e.message || e.code)); } }
+  else saveLocal();
+}
+async function putScelta(gid, id, val) {
+  const g = S.giorni[gid]; const scelte = { ...(g.scelte || {}), [id]: val };
+  const [sh, pr] = dividi(g, scelte);
+  const p = scriviGiorno(gid, g.data, g.persona, sh, pr, scelte); render();
+  try { await p; } catch (e) { flash("Modifica non salvata: " + (e.message || e.code)); }
+}
+async function putCorrezione(id, val) {
+  const next = { ...S.correzioni }; if (val) next[id] = val; else delete next[id];
+  S.correzioni = next; S.corrEdit = null; render();
+  if (db) { try { val ? await db.doc("correzioni/" + id).set(val) : await db.doc("correzioni/" + id).delete(); flash(val ? `Sosta spostata su ${val.nome}.` : "Correzione tolta."); }
+    catch (e) { flash("Correzione non salvata: " + (e.message || e.code)); } }
+  else saveLocal();
+}
+function corrForm(s, l) {
+  const id = corrId(s), c = S.correzioni[id];
+  const nomi = [...new Set([...Object.values(S.clienti).map((x) => x.nome), ...Object.values(S.luoghi).filter((x) => x.nome && (x.categoria || "cliente") === "cliente").map((x) => x.nome)])]
+    .filter((n) => n && n !== l.nome).sort((a, b) => a.localeCompare(b, "it"));
+  return `<form class="corr-form" data-corrform="${esc(id)}" data-pid="${esc(s.pid)}" data-s="${s.s}">
+    <span class="muted" style="font-size:.82rem">Vale solo per questa visita. Il nome del posto non cambia.</span>
+    <select id="corr-${esc(id)}" name="nome" aria-label="Cliente giusto"><option value="">Scegli il cliente giusto…</option>${nomi.map((n) => `<option value="${esc(n)}">${esc(n)}</option>`).join("")}</select>
+    <div class="row"><button class="btn sm" type="submit">Sposta la visita</button>${c ? `<button class="btn ghost sm" type="button" data-corrdel="${esc(id)}">Togli correzione (era ${esc((S.luoghi[s.pid] || {}).nome || "il posto originale")})</button>` : ""}<button class="btn ghost sm" type="button" data-corrcancel>Annulla</button></div>
+  </form>`;
+}
+async function putCasa(persona, casa) {
+  S.case = { ...S.case, [persona]: casa }; render();
+  if (db) { try { await db.doc("impostazioni/" + casaDoc(persona)).set(casa); } catch (e) { flash("Casa non salvata: " + (e.message || e.code)); } }
+  else saveLocal();
+}
+async function putLavoro(key, val) {
+  const next = { ...S.lavori }; if (val) next[key] = val; else delete next[key];
+  S.lavori = next; merge(); render();
+  if (db) { try { val ? await db.doc("lavori/" + key).set(val) : await db.doc("lavori/" + key).delete(); } catch (e) { flash("Lavori non salvati: " + (e.message || e.code)); } }
+  else saveLocal();
+}
+async function putPersone(lista) {
+  S.persone = lista; render();
+  if (db) { try { await db.doc("impostazioni/persone").set({ lista }); } catch (e) { flash("Persone non salvate: " + (e.message || e.code)); } }
+  else saveLocal();
+}
+async function putAttivita(lista) {
+  S.attivita = lista; render();
+  if (db) { try { await db.doc("impostazioni/attivita").set({ lista }); } catch (e) { flash("Elenco non salvato: " + (e.message || e.code)); } }
+  else saveLocal();
+}
+let flashMsg = "";
+function flash(m) { flashMsg = m; render(); setTimeout(() => { if (flashMsg === m) { flashMsg = ""; render(); } }, 6000); }
+
+/* ---------- import ---------- */
+let importStato = "";
+async function importa(file) {
+  importStato = "Leggo il file…"; render();
+  let raw;
+  try { raw = JSON.parse(await file.text()); } catch { importStato = "Il file non è un JSON valido. Serve il file esportato dalla Cronologia di Google Maps."; render(); return; }
+  const per = S.importPer || S.io, casa = casaDi(per);
+  let res;
+  try { res = Engine.process(raw, casa && casa.lat != null ? casa : null); }
+  catch { importStato = "Non trovo la casa nel file. Imposta prima la posizione di casa qui sotto."; render(); return; }
+  if (!res.giorni.length) { importStato = "Nel file non ci sono soste: controlla di aver esportato la Cronologia."; render(); return; }
+  if (!casa || casa.lat == null) await putCasa(per, { ...res.home, indirizzo: "" });
+  let n = 0, nuovi = 0, fail = 0;
+  res.giorni = res.giorni.filter((g) => g.data >= DA_DATA);
+  if (!res.giorni.length) { importStato = "Nel file non ci sono giornate dal 2026 in poi."; render(); return; }
+  for (const g of res.giorni) g.uscite = togliNascoste(g.uscite);
+  const list = res.giorni.slice();
+  const worker = async () => { while (list.length) { const g = list.shift();
+    const id = dayId(per, g.data), old = S.giorni[id] && !S.giorni[id]._virt ? S.giorni[id] : null; if (!old) nuovi++;
+    const scelte = (old && old.scelte) || {};
+    const [sh, pr] = dividi(g, scelte);
+    try { await scriviGiorno(id, g.data, per, sh, pr, scelte); } catch { fail++; }
+    n++; importStato = `Salvo le giornate… ${n}/${res.giorni.length}`; render(); } };
+  await Promise.all([worker(), worker(), worker()]);
+  importStato = fail ? `${res.giorni.length - fail} giornate salvate, ${fail} non salvate: riprova l'import.` : "";
+  const ultimo = res.giorni[res.giorni.length - 1].data;
+  S.mese = "60"; S.tab = "giorni"; S.chi = per === S.io ? per : "tutti";
+  flash(`Import di ${nomeDi(per)} completato: ${res.giorni.length} giornate lette, ${nuovi} nuove.` + (db ? "" : " ATTENZIONE: salvate solo su questo telefono, gli altri non le vedono."));
+}
+
+/* ---------- viste ---------- */
+let pendingRender = false;
+document.addEventListener("focusout", () => setTimeout(() => {
+  const ae = document.activeElement, v = document.getElementById("view");
+  if (ae && v && v.contains(ae) && /^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName)) return; // si è solo spostato su un altro campo
+  if (pendingRender) { pendingRender = false; render(); }
+}, 400));
+function render(force) {
+  memoL = new WeakMap();
+  inviaPresenza(); disegnaOnline();
+  const io = document.getElementById("io-sel");
+  if (io && document.activeElement !== io) io.innerHTML = persone().map((x) => `<option value="${x.id}" ${x.id === S.io ? "selected" : ""}>${esc(x.nome)}</option>`).join("");
+  document.querySelectorAll(".tabs button").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.tab === S.tab)));
+  const v = document.getElementById("view");
+  const focusId = document.activeElement && document.activeElement.id;
+  const ae = document.activeElement; // non interrompere chi sta scrivendo
+  if (!force && ae && v.contains(ae) && ((ae.tagName === "INPUT" && !["file", "checkbox", "date"].includes(ae.type)) || ae.tagName === "TEXTAREA")) { pendingRender = true; return; }
+  const bozze = {};
+  v.querySelectorAll("input[id], textarea[id], select[id]").forEach((el) => {
+    if (el.type === "file" || el.type === "checkbox") return;
+    const def = el.tagName === "SELECT" ? [...el.options].find((o) => o.defaultSelected)?.value : el.defaultValue;
+    if (el.value !== def) bozze[el.id] = el.value;
+  });
+  const scollegato = S.ready && !db ? `<div class="notice warn" style="margin-bottom:16px"><b>Non sei collegato al Registro condiviso.</b> Quello che carichi o scrivi qui resta solo su questo telefono e gli altri non lo vedono. Controlla la connessione e riapri l'app.</div>` : "";
+  v.innerHTML = scollegato + (flashMsg ? `<div class="notice" style="margin-bottom:16px">${esc(flashMsg)}</div>` : "") +
+    (S.tab === "oggi" ? viewOggi() : S.tab === "giorni" ? viewGiorni() : S.tab === "agenda" ? viewAgenda() : S.tab === "luoghi" ? viewClienti() : viewImporta());
+  for (const [id, val] of Object.entries(bozze)) { const el = document.getElementById(id); if (el && el.value !== val) el.value = val; }
+  if (focusId) { const el = document.getElementById(focusId); if (el) el.focus(); }
+}
+
+// periodi della scheda Giornate: oltre ai singoli mesi
+const PERIODI = { "60": "Ultimi 2 mesi", "tutti": "Tutto" };
+function inPeriodo(d) {
+  if (S.mese === "tutti") return true;
+  if (S.mese === "60") return d >= piuGiorni(oggiStr(), -60);
+  return d.startsWith(S.mese);
+}
+function nomePeriodo() { return PERIODI[S.mese] ? PERIODI[S.mese].toLowerCase() : new Date(S.mese + "-15T12:00:00").toLocaleDateString("it-IT", { month: "long" }); }
+function viewGiorni() {
+  const months = monthsOf();
+  const chiBar = `<div class="months" role="group" aria-label="Persona">${[...persone(), { id: "tutti", nome: "Tutti" }].map((x) => `<button data-chi="${x.id}" aria-pressed="${x.id === vista()}">${esc(x.nome)}</button>`).join("")}</div>`;
+  if (!months.length) return S.ready ? chiBar + (S.man ? viewManuale() : `<button class="btn add-man" data-manapri="1">+ Aggiungi a mano dove siamo stati</button>`) + `<div class="empty"><h2>Nessuna giornata di ${esc(vista() === "tutti" ? "nessuno" : nomeDi(vista()))}</h2><p>Carica l'export della Cronologia dalla scheda <b>Impostazioni</b>: qui compariranno le tue giornate.</p><button class="btn" data-go="importa">Importa la Cronologia</button></div>`
+    : `<div class="empty">Carico il registro…</div>`;
+  if (!S.mese || !(PERIODI[S.mese] || months.includes(S.mese))) S.mese = "60";
+  const days = giorniVisti().filter((g) => inPeriodo(g.data) && usciteDi(g).length).sort((a, b) => b.data.localeCompare(a.data) || a.persona.localeCompare(b.persona));
+  let tot = 0, strada = 0, nGiorni = 0; const perLuogo = new Map();
+  for (const g of days) {
+    const st = statDay(g); if (!st.lavorato) continue;
+    nGiorni++; tot += st.fuori; strada += st.strada;
+    for (const u of usciteDi(g)) { if (!incluso(g, u)) continue;
+      for (const s of sosteDi(u)) { const l = luogo(s); const k = l.named ? "n:" + l.nome : "p:" + s.pid;
+        const x = perLuogo.get(k) || { l, p: s, min: 0, visite: new Set() };
+        aggiungi(x, s); x.visite.add(g.data); perLuogo.set(k, x); } }
+  }
+  const mLabel = (m) => new Date(m + "-15T12:00:00").toLocaleDateString("it-IT", { month: "long", year: "numeric" });
+  const top = [...perLuogo.values()].sort((a, b) => b.min - a.min);
+  const named = top.filter((x) => x.l.named), unnamed = top.filter((x) => !x.l.named);
+  const shown = [...named, ...unnamed.slice(0, Math.max(0, 8 - named.length))];
+
+  // giorni di pioggia senza uscite: compaiono comunque nell'elenco
+  const conUscite = new Set(days.map((g) => g.data));
+  const pioggiaSola = Object.keys(S.meteo).filter((d) => piove(d) && inPeriodo(d) && !conUscite.has(d)).map((d) => ({ data: d, persona: "", uscite: [], _id: "pioggia-" + d, soloPioggia: true }));
+  const nPioggia = Object.keys(S.meteo).filter((d) => piove(d) && inPeriodo(d)).length;
+  // in "Tutti": una riga per giorno con una linea per persona, che si unisce quando siete insieme
+  const righe = vista() === "tutti" ? gruppiPerGiorno(days) : days;
+  const tutti = [...righe, ...pioggiaSola].sort((a, b) => b.data.localeCompare(a.data));
+  // settimane
+  const weeks = new Map();
+  for (const g of tutti) {
+    const d = new Date(g.data + "T12:00:00"); const mon = new Date(d); mon.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+    const k = mon.toISOString().slice(0, 10); (weeks.get(k) || weeks.set(k, []).get(k)).push(g);
+  }
+  return `
+  <div class="section">
+    <div class="months" role="group" aria-label="Persona">${[...persone(), { id: "tutti", nome: "Tutti" }].map((x) => `<button data-chi="${x.id}" aria-pressed="${x.id === vista()}">${esc(x.nome)}</button>`).join("")}</div>
+    <div class="months" role="group" aria-label="Periodo">${Object.entries(PERIODI).map(([k, v]) => `<button data-mese="${k}" aria-pressed="${k === S.mese}">${v}</button>`).join("")}${months.slice().reverse().map((m) => `<button data-mese="${m}" aria-pressed="${m === S.mese}">${mLabel(m)}</button>`).join("")}</div>
+    <div class="stats">
+      <div><span class="label">Giornate di lavoro</span><span class="big">${nGiorni}</span></div>
+      <div><span class="label">Ore fuori casa</span><span class="big">${ore(tot)}</span></div>
+      <div><span class="label">Media al giorno</span><span class="big">${nGiorni ? dur(tot / nGiorni) : "–"}</span></div>
+      <div><span class="label">Di cui in strada</span><span class="big">${ore(strada)}</span></div>
+    </div>
+    <form class="rain-bar" id="pioggia-form"><span>☔ <b>${nPioggia}</b> ${nPioggia === 1 ? "giorno" : "giorni"} di pioggia nel periodo</span>
+      <span class="rain-add"><input type="date" id="pioggia-data" name="d" max="${oggiStr()}" value="${oggiStr()}"><button class="btn ghost sm" type="submit">Segna pioggia</button></span></form>
+  </div>
+  <div class="section">
+    ${S.man ? viewManuale() : `<button class="btn add-man" data-manapri="1">+ Aggiungi a mano dove siamo stati</button>`}
+    <div class="section-head"><h2>Giornate</h2>
+      <div class="legend"><span><i class="sw c-cliente"></i>Cliente</span><span><i class="sw c-vivaio"></i>Vivaio</span><span><i class="sw c-acquisti"></i>Acquisti</span><span><i class="sw c-altro"></i>Senza nome</span><span><i class="sw c-road"></i>Strada</span>${vista() === "tutti" ? `<span><i class="sw" style="background:var(--accent-soft);border:1px dashed var(--accent)"></i>Insieme</span><span><i style="display:inline-block;width:14px;border-top:2px dotted var(--accent)"></i>Con gli altri (vedi sopra)</span>` : ""}</div>
+    </div>
+    ${[...weeks.entries()].sort((a, b) => b[0].localeCompare(a[0])).map(([k, gs]) => {
+      const wt = gs.reduce((a, g) => a + oreRiga(g), 0);
+      const end = new Date(k + "T12:00:00"); end.setDate(end.getDate() + 6);
+      return `<div class="week"><div class="week-head"><span>Settimana ${new Date(k + "T12:00:00").toLocaleDateString("it-IT", { day: "numeric", month: "short" })} – ${end.toLocaleDateString("it-IT", { day: "numeric", month: "short" })}</span><b class="num">${dur(wt)}${vista() === "tutti" ? ' <small style="font-weight:400">sommando tutti</small>' : ""}</b></div>
+        <div class="axis" aria-hidden="true"><span></span><span></span><span class="ticks"><span>5</span><span>8</span><span>11</span><span>14</span><span>17</span><span>20</span><span>23</span></span><span></span></div>
+        ${gs.map(dayRow).join("")}</div>`;
+    }).join("")}
+  </div>`;
+}
+
+const DAY0 = 5, DAY1 = 23;
+function pos(ms, data) {
+  const base = Date.parse(data + "T00:00:00" + offset(data));
+  const h = (ms - base) / 3.6e6; return Math.max(0, Math.min(100, (h - DAY0) / (DAY1 - DAY0) * 100));
+}
+const memoOff = new Map();
+function offset(data) { let o = memoOff.get(data); if (o == null) { o = offsetCalc(data); memoOff.set(data, o); } return o; }
+function offsetCalc(data) {
+  const p = new Intl.DateTimeFormat("en-US", { timeZone: TZ, timeZoneName: "longOffset" }).formatToParts(new Date(data + "T12:00:00Z"));
+  const z = (p.find((x) => x.type === "timeZoneName") || {}).value || "GMT+01:00"; return z.replace("GMT", "") || "+00:00";
+}
+// ---------- inserimento a mano ----------
+S.man = null; // stato del modulo aperto
+function apriManuale() {
+  const now = new Date(); const hh = String(now.getHours()).padStart(2, "0");
+  S.man = { data: oggiStr(), persone: persone().map((x) => x.id), pid: null, nuovo: "", da: "", a: "", tab: "clienti", cerca: "", att: [], nota: "" };
+}
+function luoghiPerScelta() {
+  const per = new Map();
+  for (const [pid, l] of Object.entries(S.luoghi)) {
+    if (!l.nome || l.categoria === "nascosto") continue;
+    if (!per.has(l.nome) || (per.get(l.nome).lat == null && l.lat != null)) per.set(l.nome, { pid, nome: l.nome, cat: l.categoria || "altro", lat: l.lat ?? null, lng: l.lng ?? null });
+  }
+  const tutti = [...per.values()].sort((a, b) => a.nome.localeCompare(b.nome, "it"));
+  return { clienti: tutti.filter((x) => x.cat === "cliente"), altri: tutti.filter((x) => x.cat !== "cliente") };
+}
+const aiutoPosizione = "Sul posto: apri Google Maps, tocca il pallino blu (la tua posizione), tieni premuto sulle coordinate per copiarle e incollale qui. Va bene anche il link da Condividi.";
+const iniziale = (n) => (n.normalize("NFD").replace(/[\u0300-\u036f]/g, "").match(/[A-Za-z]/) || ["#"])[0].toUpperCase();
+function viewManuale() {
+  const M = S.man; if (!M) return "";
+  const L = luoghiPerScelta(); const lista = M.tab === "clienti" ? L.clienti : L.altri;
+  const q = M.cerca.trim().toLowerCase();
+  const filtrata = q ? lista.filter((x) => x.nome.toLowerCase().includes(q)) : lista;
+  const lettere = [...new Set(filtrata.map((x) => iniziale(x.nome)))];
+  const scelto = M.pid ? (L.clienti.concat(L.altri).find((x) => x.pid === M.pid) || { nome: (S.luoghi[M.pid] || {}).nome || "", cat: "cliente" }) : (M.nuovoScelto ? { nome: M.nuovo + " (nuovo cliente)", cat: "cliente" } : null);
+  const durata = (M.da.length === 5 && M.a.length === 5) ? (+M.a.slice(0, 2) * 60 + +M.a.slice(3)) - (+M.da.slice(0, 2) * 60 + +M.da.slice(3)) : null;
+  return `<form class="card man-form" id="man-form">
+    <div class="section-head"><h2>Aggiungi a mano</h2><button class="linkish" type="button" data-manchiudi="1">Chiudi</button></div>
+    <div class="man-step"><span class="man-n">1</span><div class="man-body">
+      <div class="grid2">
+        <label class="field"><span class="label">Giorno</span><input type="date" id="man-data" value="${M.data}" max="${oggiStr()}" data-man="data"></label>
+        <div class="field"><span class="label">Chi c'era</span><div class="chips">${persone().map((x) => `<label class="check"><input type="checkbox" id="man-p-${x.id}" data-manp="${x.id}" ${M.persone.includes(x.id) ? "checked" : ""}>${esc(x.nome)}</label>`).join("")}</div></div>
+      </div>
+    </div></div>
+    <div class="man-step"><span class="man-n">2</span><div class="man-body">
+      <span class="label">Dove</span>
+      ${scelto ? `<div class="man-scelto"><span class="sw ${CATS[scelto.cat || "cliente"] ? CATS[scelto.cat || "cliente"].cls : "c-cliente"}"></span><b>${esc(scelto.nome)}</b><button class="linkish" type="button" data-mancambia="1">Cambia</button></div>` : `
+      <div class="seg"><button type="button" data-mantab="clienti" aria-pressed="${M.tab === "clienti"}">Clienti (${L.clienti.length})</button><button type="button" data-mantab="altri" aria-pressed="${M.tab === "altri"}">Altri luoghi (${L.altri.length})</button></div>
+      <input id="man-cerca" class="man-cerca" placeholder="Cerca per nome…" value="${esc(M.cerca)}" autocomplete="off" data-man="cerca">
+      <div class="man-picker">
+        <div class="man-list" id="man-list">${filtrata.length ? lettere.map((ch) => `<div class="man-group" id="man-g-${ch}"><div class="man-letter">${ch}</div>${filtrata.filter((x) => iniziale(x.nome) === ch).map((x) => `<button type="button" class="man-item" data-manpid="${x.pid}"><span class="sw ${(CATS[x.cat] || CATS.altro).cls}"></span>${esc(x.nome)}</button>`).join("")}</div>`).join("") : `<p class="muted" style="margin:8px">Nessun luogo trovato.</p>`}</div>
+        <div class="man-az">${lettere.map((ch) => `<button type="button" data-manlett="${ch}">${ch}</button>`).join("")}</div>
+      </div>
+      <div class="man-nuovo"><input id="man-nuovo" placeholder="Non c'è? Scrivi il nome di un nuovo cliente" value="${esc(M.nuovo)}" autocomplete="off" data-man="nuovo"><button class="btn ghost sm" type="button" data-mannuovo="1">Usa</button></div>`}
+      ${M.nuovoScelto ? `<label class="field"><span class="label">Posizione del nuovo cliente (facoltativa)</span><input id="man-pos" placeholder="Incolla qui coordinate o link di Maps" value="${esc(M.pos || "")}" autocomplete="off" data-man="pos"><span class="muted" style="font-size:.8rem">${aiutoPosizione}</span></label>` : ""}
+    </div></div>
+    <div class="man-step"><span class="man-n">3</span><div class="man-body">
+      <div class="man-ore">
+        <label class="field"><span class="label">Arrivo</span><input id="man-da" class="ora" inputmode="numeric" placeholder="--:--" maxlength="5" value="${M.da}" data-manora="da" autocomplete="off"><button class="linkish" type="button" data-manadesso="da">Adesso</button></label>
+        <label class="field"><span class="label">Fine</span><input id="man-a" class="ora" inputmode="numeric" placeholder="--:--" maxlength="5" value="${M.a}" data-manora="a" autocomplete="off"><button class="linkish" type="button" data-manadesso="a">Adesso</button></label>
+        <div class="field"><span class="label">Durata</span><b class="man-dur">${durata != null && durata > 0 ? dur(durata) : "–"}</b></div>
+      </div>
+      <p class="muted" style="margin:4px 0 0;font-size:.82rem">Scrivi solo i numeri: 0730 diventa 07:30.</p>
+    </div></div>
+    <div class="man-step"><span class="man-n">4</span><div class="man-body">
+      <span class="label">Lavori svolti</span>
+      <div class="chips">${attivita().map((a, i) => `<label class="check"><input type="checkbox" id="man-att-${i}" data-manatt="${esc(a)}" ${M.att.includes(a) ? "checked" : ""}>${esc(a)}</label>`).join("")}</div>
+      <textarea id="man-nota" rows="2" placeholder="Note (facoltative)" data-man="nota">${esc(M.nota)}</textarea>
+    </div></div>
+    <div class="row-between"><span class="muted" style="font-size:.85rem" id="man-err"></span><button class="btn" type="submit">Salva</button></div>
+  </form>`;
+}
+// coordinate incollate da Google Maps / Mappe di Apple: "45.12, 7.65", link con @lat,lng, ll=, q=, query=
+function leggiCoordinate(txt) {
+  if (!txt) return null;
+  const t = decodeURIComponent(String(txt)).replace(/\s+/g, " ");
+  const re = [/@(-?\d{1,2}\.\d+),\s*(-?\d{1,3}\.\d+)/, /[?&](?:ll|q|query|daddr|sll|coordinate)=(-?\d{1,2}\.\d+),\s*(-?\d{1,3}\.\d+)/, /(-?\d{1,2}\.\d{3,})\s*[,;]\s*(-?\d{1,3}\.\d{3,})/];
+  for (const r of re) { const m = t.match(r); if (m) { const lat = +m[1], lng = +m[2]; if (Math.abs(lat) <= 90 && Math.abs(lng) <= 180) return { lat, lng }; } }
+  return null;
+}
+async function salvaPosizioneCliente(nome, txt) {
+  const c = leggiCoordinate(txt);
+  if (!c) { flash("Non riconosco la posizione: incolla le coordinate (es. 45.1234, 7.6543) o il link di Maps."); return false; }
+  // un posto "a mano" senza coordinate prende queste; altrimenti si aggiunge una nuova posizione al cliente
+  const senza = Object.entries(S.luoghi).find(([, l]) => l.nome === nome && l.lat == null);
+  const cat = (Object.values(S.luoghi).find((l) => l.nome === nome) || {}).categoria || "cliente";
+  const pid = senza ? senza[0] : "m-" + slug(nome) + "-" + Date.now().toString(36);
+  await putLuogo(pid, { nome, categoria: cat, lat: c.lat, lng: c.lng });
+  for (const [id, m] of Object.entries(S.manuali)) if (m.pid === pid && m.lat == null) { const d = { ...m, lat: c.lat, lng: c.lng }; S.manuali = { ...S.manuali, [id]: d }; if (db) { try { await db.doc("manuali/" + id).set(d); } catch {} } }
+  merge(); flash(`Posizione di ${nome} salvata. Da ora le soste lì vicino (80 m) nella Cronologia avranno questo nome.`);
+  return true;
+}
+function oraValida(t) { return /^([01]\d|2[0-3]):[0-5]\d$/.test(t); }
+async function salvaManuale() {
+  const M = S.man; const err = (t) => { const e = document.getElementById("man-err"); if (e) e.textContent = t; };
+  if (!M.persone.length) return err("Scegli chi c'era.");
+  if (!M.pid && !(M.nuovoScelto && M.nuovo.trim())) return err("Scegli dove eravate.");
+  if (!oraValida(M.da) || !oraValida(M.a)) return err("Controlla gli orari (es. 07:30).");
+  if (M.a <= M.da) return err("L'ora di fine deve essere dopo l'arrivo.");
+  let pid = M.pid, lat = null, lng = null;
+  if (!pid) { const nome = nomeUguale(M.nuovo.trim()); pid = "m-" + slug(nome); const c = leggiCoordinate(M.pos);
+    if (M.pos && !c) return err("Non riconosco la posizione incollata: lasciala vuota o incolla le coordinate.");
+    if (!S.luoghi[pid]) await putLuogo(pid, { nome, categoria: "cliente", lat: c ? c.lat : null, lng: c ? c.lng : null });
+    if (c) { lat = c.lat; lng = c.lng; } }
+  else { const l = S.luoghi[pid] || {}; lat = l.lat ?? null; lng = l.lng ?? null; }
+  const id = "m" + Date.now().toString(36);
+  const doc = { data: M.data, persone: M.persone, persona: M.persone[0], pid, lat, lng, da: M.da, a: M.a, creatoDa: S.io };
+  S.manuali = { ...S.manuali, [id]: doc }; merge();
+  if (M.att.length || M.nota.trim()) await putLavoro(lavKey(M.data, pid), { data: M.data, pid, attivita: M.att, nota: M.nota.trim() });
+  if (db) { try { await db.doc("manuali/" + id).set(doc); } catch (e) { flash("Non salvato: " + (e.message || e.code)); return; } } else saveLocal();
+  const nome = (S.luoghi[pid] || {}).nome || M.nuovo;
+  S.man = null; S.mese = "60"; S.aperti.add(dayId(M.persone.includes(S.io) ? S.io : M.persone[0], M.data));
+  flash(`Salvato: ${nome}, ${dLong(M.data)} ${doc.da}–${doc.a}.`);
+}
+async function eliminaManuale(id) {
+  const next = { ...S.manuali }; delete next[id]; S.manuali = next; S.confMan = null; merge(); render();
+  if (db) { try { await db.doc("manuali/" + id).delete(); } catch {} } else saveLocal();
+}
+// ---------- giornate di tutti: linee che si uniscono quando siete insieme ----------
+const coloreP = (id) => `var(--p${Math.max(0, persone().findIndex((x) => x.id === id)) % 4})`;
+function gruppiPerGiorno(days) {
+  const date = [...new Set(days.map((g) => g.data))];
+  const ordine = (id) => persone().findIndex((x) => x.id === id);
+  return date.map((d) => {
+    const membri = Object.values(S.giorni).filter((g) => g.data === d && usciteDi(g).some((u) => incluso(g, u))).sort((a, b) => ordine(a.persona) - ordine(b.persona));
+    return membri.length > 1 ? { data: d, gruppo: membri, _id: "tutti-" + d, persona: "" } : (membri[0] || days.find((g) => g.data === d));
+  });
+}
+const oreRiga = (g) => g.gruppo ? g.gruppo.filter((x) => !x._virt).reduce((a, x) => a + statDay(x).fuori, 0) : statDay(g).fuori;
+let memoL = new WeakMap();
+const luogoM = (p) => { let l = memoL.get(p); if (!l) { l = luogo(p); memoL.set(p, l); } return l; };
+function stessoPosto(a, b) {
+  if (!a || !b) return false;
+  if (a.casa || b.casa) return !!(a.casa && b.casa && a.casa.lat != null && b.casa.lat != null && Engine.dist(a.casa, b.casa) < 200);
+  const la = luogoM(a), lb = luogoM(b);
+  if (la.named && lb.named) return la.nome === lb.nome;
+  return a.lat != null && b.lat != null && Engine.dist(a, b) < 150;
+}
+// dove si trova una persona a un certo minuto: in una sosta, in strada tra due punti, oppure a casa (null)
+function statoA(prep, t) {
+  const casa = prep.casa;
+  for (const { u, ss } of prep.uscite) {
+    if (t < u.inizio || t > u.fine) continue;
+    for (let i = 0; i < ss.length; i++) {
+      if (t >= ss[i].s && t <= ss[i].e) return { k: "s", a: ss[i] };
+      if (t < ss[i].s) return { k: "t", a: i ? ss[i - 1] : casa, b: ss[i] };
+    }
+    return { k: "t", a: ss.length ? ss[ss.length - 1] : casa, b: casa };
+  }
+  return null;
+}
+const insieme = (x, y) => x && y && x.k === y.k && stessoPosto(x.a, y.a) && (x.k === "s" || stessoPosto(x.b, y.b));
+function barraMulti(g) {
+  const M = g.gruppo, n = M.length, PASSO = 2 * 60000, GAP = 12, PAD = 6, H = PAD * 2 + (n - 1) * GAP;
+  let t0 = Infinity, t1 = -Infinity;
+  for (const x of M) for (const u of usciteDi(x)) if (incluso(x, u)) { t0 = Math.min(t0, u.inizio); t1 = Math.max(t1, u.fine); }
+  if (!(t1 > t0)) return "";
+  const corsie = M.map((_, i) => PAD + i * GAP);
+  const prep = M.map((x) => ({ casa: { casa: casaDi(x._virt ? x._da : x.persona) }, // chi è copiato parte e torna con chi ha caricato
+    uscite: usciteDi(x).filter((u) => incluso(x, u)).map((u) => ({ u, ss: sosteDi(u) })) }));
+  const campioni = [], stati = [];
+  for (let t = t0; t <= t1 + 1; t += PASSO) stati.push({ t, st: prep.map((x) => statoA(x, t)) });
+  // insieme a coppie, ignorando separazioni brevi (fino a 8 minuti: uno arriva prima, uno riparte dopo)
+  const coppie = {};
+  for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) {
+    const v = stati.map(({ st }) => !!insieme(st[i], st[j]));
+    for (let a = 0; a < v.length; a++) if (!v[a] && a > 0 && v[a - 1]) { let b = a; while (b < v.length && !v[b]) b++;
+      if (b < v.length && b - a <= 4 && stati.slice(a, b).every(({ st }) => st[i] && st[j])) for (let c = a; c < b; c++) v[c] = true; a = b; }
+    coppie[i + "-" + j] = v;
+  }
+  // chi è stato insieme per tutta la giornata: nel dettaglio diventa una sola sezione
+  const capoS = M.map((_, i) => i), trovaS = (i) => (capoS[i] === i ? i : (capoS[i] = trovaS(capoS[i])));
+  for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++)
+    if (stati.every(({ st }, idx) => (!st[i] && !st[j]) || coppie[i + "-" + j][idx])) capoS[trovaS(j)] = trovaS(i);
+  g._sezioni = [...new Set(M.map((_, i) => trovaS(i)))].map((c) => M.filter((_, i) => trovaS(i) === c));
+  // tratti della giornata in cui la composizione dei gruppi non cambia
+  g._tratti = [];
+  stati.forEach(({ t, st }, idx) => {
+    const capo = M.map((_, i) => i), tr = (i) => (capo[i] === i ? i : (capo[i] = tr(capo[i])));
+    for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) if (coppie[i + "-" + j][idx]) capo[tr(j)] = tr(i);
+    const gr = [...new Set(M.map((_, i) => i).filter((i) => st[i]).map(tr))].map((c) => M.map((_, i) => i).filter((i) => st[i] && tr(i) === c));
+    const key = gr.map((x) => x.join(",")).join("|"), last = g._tratti[g._tratti.length - 1];
+    if (last && last.key === key) last.tb = t + PASSO; else g._tratti.push({ key, ta: t, tb: t + PASSO, gruppi: gr });
+  });
+  stati.forEach(({ t, st }, idx) => {
+    const capo = M.map((_, i) => i);
+    const trova = (i) => (capo[i] === i ? i : (capo[i] = trova(capo[i])));
+    for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) if (coppie[i + "-" + j][idx]) capo[trova(j)] = trova(i);
+    // ogni gruppo di persone insieme ha la sua linea; i gruppi si dispongono attorno al centro
+    const fuori = M.map((_, j) => j).filter((j) => st[j]);
+    const capi = [...new Set(fuori.map(trova))].sort((a, b) => Math.min(...fuori.filter((j) => trova(j) === a)) - Math.min(...fuori.filter((j) => trova(j) === b)));
+    const centro = H / 2, k = capi.length;
+    const y = st.map((v, i) => { if (!v) return null; const c = capi.indexOf(trova(i)); const grp = fuori.filter((j) => trova(j) === trova(i));
+      return { y: centro + (c - (k - 1) / 2) * GAP, col: grp.length === n ? "var(--road)" : coloreP(M[Math.min(...grp)].persona) }; });
+    campioni.push({ t, y });
+  });
+  // una corsia per chi è stato insieme tutto il giorno; lo sfondo verde segna quando siete insieme
+  const sez = g._sezioni, unitaDi = (mi) => sez.findIndex((m) => m.includes(M[mi]));
+  const T = (g._tratti || []).map((tr) => ({ ...tr, gu: tr.gruppi.map((mm) => [...new Set(mm.map(unitaDi))]) }));
+  return sez.map((m, ui) => {
+    const rep = m.find((y) => !y._virt) || m[0];
+    let html = "";
+    // nelle corsie sotto la prima, i momenti insieme non si ripetono: già si vedono nella corsia sopra
+    const conSopra = T.filter((t) => { const gr = t.gu.find((x) => x.includes(ui)); return gr && gr.some((x) => x < ui); }).map((t) => [t.ta, t.tb]);
+    const nascosto = (t) => conSopra.some(([a, b]) => t >= a && t < b);
+    for (const t of T) { const gr = t.gu.find((x) => x.includes(ui)); if (!gr || gr.length < 2) continue;
+      const a = pos(t.ta, g.data), b = pos(t.tb, g.data);
+      html += gr.some((x) => x < ui) ? `<span class="with" style="left:${a}%;width:${Math.max(0, b - a)}%" title="Insieme agli altri"></span>` : `<span class="band" style="left:${a}%;width:${Math.max(0, b - a)}%"></span>`; }
+    for (const u of usciteDi(rep)) { if (!incluso(rep, u)) continue;
+      // strada solo nei tratti da solo
+      let a0 = u.inizio; const pezzi = [];
+      for (const [a, b] of conSopra.filter(([a, b]) => b > u.inizio && a < u.fine).sort((x, y) => x[0] - y[0])) { if (a > a0) pezzi.push([a0, a]); a0 = Math.max(a0, b); }
+      if (a0 < u.fine) pezzi.push([a0, u.fine]);
+      for (const [p0, p1] of pezzi) { const a = pos(p0, g.data), b = pos(p1, g.data); html += `<span class="road" style="left:${a}%;width:${Math.max(0, b - a)}%"></span>`; }
+      for (const st of sosteDi(u)) { if (nascosto((st.s + st.e) / 2)) continue; const l = luogoM(st), x = pos(st.s, g.data), y = pos(st.e, g.data); if (y <= x) continue;
+        html += `<span class="stop ${CATS[l.cat].cls}" style="left:${x}%;width:${y - x}%" title="${esc(l.nome)} ${hhmm(st.s)}–${hhmm(st.e)}"></span>`; } }
+    return `<span class="lane"><span class="lane-name">${m.map((y) => `<i class="pdot" style="background:${coloreP(y.persona)}"></i><b>${esc(nomeDi(y.persona))}</b>`).join(" ")}&nbsp;· ${dur(statDay(rep).fuori)}</span><span class="bar lane-bar">${html}</span></span>`;
+  }).join("");
+}
+// una sosta con tutti i suoi comandi (nome, lavori, correzione)
+function rigaSosta(data, s, e, chi) {
+  const l = luogo(s);
+  return `<li><span class="t">${hhmm(s.s)}–${hhmm(e)}</span><span class="stop-line"><span class="sw ${CATS[l.cat].cls}"></span><span class="nm">${esc(l.nome)}</span><span class="du">${dur((e - s.s) / 60000)}</span>${chi || ""}
+    <a class="maps" target="_blank" rel="noopener" href="${mapsUrl(s)}">Maps ↗</a>
+    <button class="linkish" data-edit="${s.pid}" data-lat="${s.lat}" data-lng="${s.lng}">${l.named ? "Modifica" : "Dai un nome"}</button>
+    <button class="linkish" data-lav="${lavKey(data, s.pid)}" data-at="${s.s}">${hasWork(S.lavori[lavKey(data, s.pid)]) ? "Modifica lavori" : "+ Lavori svolti"}</button>
+    ${S.admin ? `<button class="linkish" data-corr="${esc(corrId(s))}">${l.corretto ? "Corretta ✓" : "Era da un altro cliente"}</button>` : ""}
+    ${S.editing === s.pid ? editor(s.pid, s, "", l.corretto ? ((S.luoghi[s.pid] || {}).nome || "") : l.named ? l.nome : "") : ""}${S.admin && S.corrEdit === corrId(s) ? corrForm(s, l) : ""}</span></li>${workBlock(data, s)}`;
+}
+const nomiConPunti = (ids) => ids.map((id) => `<span class="chi-tag"><i class="pdot" style="background:${coloreP(id)}"></i>${esc(nomeDi(id))}</span>`).join("");
+// dettaglio di una giornata di più persone: le soste in comune una volta sola, e un ramo per chi si separa
+function dettaglioUnito(g) {
+  const sez = g._sezioni || g.gruppo.map((x) => [x]);
+  const unita = sez.map((m) => { const rep = m.find((y) => !y._virt) || m[0];
+    const soste = []; for (const u of usciteDi(rep)) if (incluso(rep, u)) for (const st of sosteDi(u)) soste.push(st);
+    const usc = usciteDi(rep).filter((u) => incluso(rep, u));
+    return { rep, ids: m.map((y) => y.persona), soste, esce: usc.length ? usc[0].inizio : null, rientra: usc.length ? usc[usc.length - 1].fine : null }; });
+  const nU = unita.length;
+  const unitaDi = (mi) => sez.findIndex((m) => m.includes(g.gruppo[mi]));
+  const sostaIn = (ui, ta, tb) => unita[ui].soste.filter((st) => st.s >= ta && st.s < tb);
+  const sostaSu = (ui, t) => unita[ui].soste.find((st) => st.s < t && st.e > t);
+  let html = "";
+  const T = (g._tratti || []).filter((tr) => tr.gruppi.length).map((tr) => { const gu = tr.gruppi.map((mm) => [...new Set(mm.map(unitaDi))].sort((x, y) => x - y));
+    return { ...tr, gu, ins: nU === 1 || (gu.length === 1 && gu[0].length === nU) }; });
+  if (!T.length) return dayDetail(unita[0].rep);
+  // ogni sosta va nel tratto in cui inizia; se poco dopo vi ritrovate lì (entro 10 min), va con il tratto insieme
+  const idxDi = (st) => { let k = T.findIndex((t) => st.s >= t.ta && st.s < t.tb); if (k < 0) k = st.s < T[0].ta ? 0 : T.length - 1;
+    if (!T[k].ins && T[k + 1] && T[k + 1].ins && T[k + 1].ta - st.s <= 600000 && st.e > T[k + 1].ta) k++; return k; };
+  const sosteK = unita.map((u) => u.soste.map((st) => ({ st, k: idxDi(st) })));
+  const lista = (ui, k0, k1) => sosteK[ui].filter((x) => x.k >= k0 && x.k <= k1).map((x) => rigaSosta(g.data, x.st, x.st.e, "")).join("");
+  let k = 0, primo = true;
+  while (k < T.length) {
+    if (T[k].ins) {
+      if (!primo) html += `<li class="split-mark">↗ <b>${hhmm(T[k].ta)}</b> · di nuovo insieme</li>`;
+      html += lista(T[k].gu[0][0], k, k); k++;
+    } else {
+      let k2 = k; while (k2 + 1 < T.length && !T[k2 + 1].ins) k2++;
+      html += `<li class="split-mark">↘ ${primo ? "Ognuno per conto suo" : `<b>${hhmm(T[k].ta)}</b> · vi separate`}</li>`;
+      // chi resta insieme per tutto il tratto separato sta nello stesso ramo
+      const run = T.slice(k, k2 + 1), rami = [];
+      for (let ui = 0; ui < nU; ui++) {
+        const r = rami.find((rr) => run.every((t) => { const a = t.gu.find((x) => x.includes(ui)), b = t.gu.find((x) => x.includes(rr[0])); return !a || !b || a === b; })
+          && run.some((t) => t.gu.some((x) => x.includes(ui) && x.includes(rr[0]))));
+        r ? r.push(ui) : rami.push([ui]);
+      }
+      for (const rr of rami) { const ids = rr.flatMap((x) => unita[x].ids);
+        const ong = unita[rr[0]].soste.find((st) => st.s < T[k].ta && st.e > T[k].ta);
+        const corpo = lista(rr[0], k, k2) || `<li><span class="t"></span><span class="muted">${ong ? `resta da ${esc(luogo(ong).nome)}` : "in strada"}</span></li>`;
+        html += `<li class="branch" style="--bc:${coloreP(ids[0])}"><div class="branch-head">${nomiConPunti(ids)}</div><ol class="legs">${corpo}</ol></li>`; }
+      k = k2 + 1;
+    }
+    primo = false;
+  }
+  const esce = unita.map((u) => u.esce != null ? `${nomiConPunti(u.ids)} <span class="mono">${hhmm(u.esce)}</span>` : "").filter(Boolean).join(" · ");
+  const rientra = unita.map((u) => u.rientra != null ? `${nomiConPunti(u.ids)} <span class="mono">${hhmm(u.rientra)}</span>` : "").filter(Boolean).join(" · ");
+  const tutti = nU === 1 ? `<div class="person-head">${nomiConPunti(unita[0].ids)}<span class="muted" style="font-weight:400;font-size:.82rem">insieme tutto il giorno</span></div>` : `<div class="person-head">${nomiConPunti(unita.flatMap((u) => u.ids))}</div>`;
+  const rainSw = `<div class="rain-sw"><button class="toggle" role="switch" aria-checked="${piove(g.data)}" data-pioggia="${g.data}" data-val="${piove(g.data) ? 0 : 1}"><i></i>☔ Giornata di pioggia</button></div>`;
+  const aperti = S.aperti;
+  const completi = g.gruppo.filter((x) => !x._virt).map((x) => { const k = "full-" + x._id; return `<button class="linkish" data-day="${k}">${aperti.has(k) ? "Chiudi" : "Giornata completa di"} ${esc(nomeDi(x.persona))}</button>${aperti.has(k) ? dayDetail(x).replace(/<div class="rain-sw">[\s\S]*?<\/button><\/div>/, "") : ""}`; }).join(" ");
+  return `<div class="detail">${rainSw}${tutti}<div class="outing"><ol class="legs">
+    <li><span class="t"></span><span class="home-line">Escono di casa: ${esce}</span></li>
+    ${html}
+    <li><span class="t"></span><span class="home-line">Rientrano: ${rientra}</span></li></ol></div>
+    <p class="muted" style="font-size:.82rem;margin:10px 0 0">Per spegnere un'uscita o vedere i tragitti: ${completi}</p></div>`;
+}
+function rigaGruppo(g) {
+  const open = S.aperti.has(g._id), barra = barraMulti(g);
+  let prima = Infinity, ultima = -Infinity;
+  const chi = g.gruppo.map((x) => { const st = statDay(x); prima = Math.min(prima, st.prima); ultima = Math.max(ultima, st.ultima);
+    return `<span><i class="pdot" style="background:${coloreP(x.persona)}"></i><b>${esc(nomeDi(x.persona))}</b> ${dur(st.fuori)}</span>`; }).join("");
+  const [wd, ...rest] = dLong(g.data).split(" ");
+  return `<div class="day">
+    <button class="day-row" data-day="${g._id}" aria-expanded="${open}">
+      <span class="day-date">${piove(g.data) ? '<span class="rain-ico" title="Giornata di pioggia">☔</span> ' : ""}${wd} <small>${rest.join(" ")}</small></span>
+      <span class="day-span">${hhmm(prima)} → ${hhmm(ultima)}</span>
+      <span class="bar multi">${barra}</span>
+      <span class="day-tot"></span>
+    </button>
+    ${open ? dettaglioUnito(g) : ""}${false ? `<div class="detail">${(g._sezioni || g.gruppo.map((x) => [x])).map((sez, i) => { const x = sez.find((y) => !y._virt) || sez[0];
+      return `<div class="person-head">${sez.map((y) => `<i class="pdot" style="background:${coloreP(y.persona)}"></i>${esc(nomeDi(y.persona))}`).join(" ")}${sez.length > 1 ? `<span class="muted" style="font-weight:400;font-size:.82rem">insieme tutto il giorno</span>` : ""}</div>${dayDetail(x).replace(/^<div class="detail">/, "<div>").replace(i ? /<div class="rain-sw">[\s\S]*?<\/button><\/div>/ : /^$/, "")}`; }).join("")}</div>` : ""}
+  </div>`;
+}
+function dayRow(g) {
+  if (g.gruppo) return rigaGruppo(g);
+  if (g.soloPioggia) {
+    const [wd0, ...rest0] = dLong(g.data).split(" ");
+    return `<div class="day off rain"><div class="day-row"><span class="day-date">${wd0} <small>${rest0.join(" ")}</small></span><span class="day-span">☔ Pioggia</span><span class="muted" style="font-size:.85rem">Nessuna uscita · <button class="linkish" data-pioggia="${g.data}" data-val="0">togli pioggia</button></span><span class="day-tot">–</span></div></div>`;
+  }
+  const st = statDay(g); const open = S.aperti.has(g._id);
+  let bar = "";
+  for (const u of usciteDi(g)) {
+    const off = incluso(g, u) ? "" : " off";
+    const a = pos(u.inizio, g.data), b = pos(u.fine, g.data);
+    bar += `<span class="road${off}" style="left:${a}%;width:${Math.max(0, b - a)}%"></span>`;
+    for (const s of sosteDi(u)) { const l = luogo(s); const x = pos(s.s, g.data), y = pos(s.e, g.data); if (y <= x) continue;
+      bar += `<span class="stop ${CATS[l.cat].cls}${off}" style="left:${x}%;width:${y - x}%" title="${esc(l.nome)} ${hhmm(s.s)}–${hhmm(s.e)}"></span>`; }
+  }
+  const span = st.lavorato ? `${hhmm(st.prima)} → ${hhmm(st.ultima)}` : `<span class="muted">non contata</span>`;
+  const [wd, ...rest] = dLong(g.data).split(" ");
+  return `<div class="day${st.lavorato ? "" : " off"}">
+    <button class="day-row" data-day="${g._id}" aria-expanded="${open}">
+      <span class="day-date">${piove(g.data) ? '<span class="rain-ico" title="Giornata di pioggia">☔</span> ' : ""}${wd} <small>${rest.join(" ")}</small>${vista() === "tutti" ? `<span class="who">${esc((g._con || [g.persona]).map(nomeDi).join(", "))}</span>` : ""}</span>
+      <span class="day-span">${span}</span>
+      <span class="bar">${bar}</span>
+      <span class="day-tot">${st.lavorato ? dur(st.fuori) : "–"}</span>
+    </button>
+    ${open ? dayDetail(g) : ""}
+  </div>`;
+}
+function dayDetail(g) {
+  const rainSw = `<div class="rain-sw"><button class="toggle" role="switch" aria-checked="${piove(g.data)}" data-pioggia="${g.data}" data-val="${piove(g.data) ? 0 : 1}"><i></i>☔ Giornata di pioggia</button></div>`;
+  return `<div class="detail">${rainSw}${usciteDi(g).map((u, i) => {
+    if (u._man) { const s0 = u.soste[0], l = luogo(s0), x = S.manuali[u._man] || {};
+      return `<div class="outing man"><div class="outing-head"><span><b>${esc(l.nome)}</b> <span class="muted mono">${hhmm(u.inizio)}–${hhmm(u.fine)} · ${dur((u.fine - u.inizio) / 60000)}</span> <span class="pill ok">Inserito a mano</span>${(x.persone || []).length > 1 ? ` <span class="muted" style="font-size:.8rem">${x.persone.map(nomeDi).join(", ")}</span>` : ""}</span>
+        ${S.confMan === u._man ? `<button class="btn danger sm" data-delman="${u._man}">Conferma eliminazione</button>` : `<button class="linkish" data-delmanask="${u._man}">Elimina</button>`}</div>
+        <ol class="legs"><li><span class="t"></span><span class="stop-line"><button class="linkish" data-lav="${lavKey(g.data, s0.pid)}" data-at="${s0.s}">${hasWork(S.lavori[lavKey(g.data, s0.pid)]) ? "Modifica lavori" : "+ Lavori svolti"}</button></span></li>${workBlock(g.data, s0, false)}</ol></div>`; }
+    const inc = incluso(g, u);
+    const flags = [];
+    if (!u.partenzaNota) flags.push("partenza da casa non registrata");
+    if (!u.rientroNoto) flags.push("rientro a casa non registrato");
+    let items = `<li><span class="t">${hhmm(u.inizio)}</span><span class="home-line">${u.partenzaNota ? "Esci di casa" : "Inizio tragitto"}</span></li>`;
+    let prev = u.inizio;
+    for (const s of sosteDi(u)) {
+      const gap = (s.s - prev) / 60000;
+      if (gap >= 1) items += `<li class="leg"><span class="t"></span><span>${dur(gap)} di strada</span></li>`;
+      const l = luogo(s);
+      items += `<li><span class="t">${hhmm(s.s)}–${hhmm(s.e)}</span><span class="stop-line"><span class="sw ${CATS[l.cat].cls}"></span><span class="nm">${esc(l.nome)}</span><span class="du">${dur((s.e - s.s) / 60000)}</span>
+        <a class="maps" target="_blank" rel="noopener" href="${mapsUrl(s)}">Maps ↗</a>
+        <button class="linkish" data-edit="${s.pid}" data-lat="${s.lat}" data-lng="${s.lng}">${l.named ? "Modifica" : "Dai un nome"}</button>
+        <button class="linkish" data-lav="${lavKey(g.data, s.pid)}" data-at="${s.s}">${hasWork(S.lavori[lavKey(g.data, s.pid)]) ? "Modifica lavori" : "+ Lavori svolti"}</button>
+        ${S.admin ? `<button class="linkish" data-corr="${esc(corrId(s))}">${l.corretto ? "Corretta ✓" : "Era da un altro cliente"}</button>` : ""}
+        ${S.editing === s.pid ? editor(s.pid, s, "", l.corretto ? ((S.luoghi[s.pid] || {}).nome || "") : l.named ? l.nome : "") : ""}${S.admin && S.corrEdit === corrId(s) ? corrForm(s, l) : ""}</span></li>${workBlock(g.data, s)}`;
+      prev = s.e;
+    }
+    const gap = (u.fine - prev) / 60000;
+    if (gap >= 1) items += `<li class="leg"><span class="t"></span><span>${dur(gap)} di strada</span></li>`;
+    items += `<li><span class="t">${hhmm(u.fine)}</span><span class="home-line">${u.rientroNoto ? "Rientro a casa" : "Fine tragitto"}</span></li>`;
+    return `<div class="outing">
+      <div class="outing-head">
+        <span><b>Uscita ${i + 1}</b> <span class="muted mono">${dur((u.fine - u.inizio) / 60000)}</span> ${u.auto !== "lavoro" ? `<span class="pill">${AUTO_TXT[u.auto] || u.auto}</span>` : ""} ${flags.length ? `<span class="pill">${flags.join(" · ")}</span>` : ""}</span>
+        ${g._virt ? `<span class="pill">Dalla Cronologia di ${esc(nomeDi(g._da))}</span>` : `<button class="toggle" role="switch" aria-checked="${inc}" data-scelta="${g._id}" data-id="${u.id}"><i></i>${inc ? "Contata come lavoro" : "Non contata"}</button>`}
+      </div>
+      <ol class="legs">${items}</ol>
+    </div>`;
+  }).join("")}</div>`;
+}
+const chips = (w) => `<div class="chips">${(w.attivita || []).map((a) => `<span class="chip">${esc(a)}</span>`).join("")}</div>`;
+// chi può essere tolto da una sosta: chi quel giorno non ha caricato la sua Cronologia
+const toglibili = (data) => persone().filter((x) => !((S.realiPerData || {})[data] || []).includes(x.id));
+function workBlock(data, s, conChi = true) {
+  const k = lavKey(data, s.pid), w = S.lavori[k];
+  if (S.lavEdit === k && S.lavAt === String(s.s)) return `<li class="work"><span class="t"></span>${lavForm(k, data, s, w, conChi)}</li>`;
+  const via = conChi ? ((w && w.assenti) || []) : [];
+  if (!hasWork(w) && !via.length) return "";
+  return `<li class="work"><span class="t"></span><div class="work-box">${chips(w)}${w.nota ? `<p class="nota">${esc(w.nota)}</p>` : ""}${via.length ? `<p class="muted assenti">Non c'era: ${esc(via.map(nomeDi).join(", "))}</p>` : ""}</div></li>`;
+}
+function lavForm(k, data, s, w, conChi = true) {
+  const sel = new Set((w && w.attivita) || []);
+  const opts = [...new Set([...attivita(), ...sel])];
+  const ass = new Set((w && w.assenti) || []);
+  const dalGps = ((S.realiPerData || {})[data] || []).map(nomeDi);
+  const chi = conChi && toglibili(data).length ? `<div class="field"><span class="label">Chi c'era</span><div class="chips">${toglibili(data).map((x) => `<label class="check"><input type="checkbox" id="lv-chi-${k}-${x.id}" name="chi" value="${x.id}" ${ass.has(x.id) ? "" : "checked"}>${esc(x.nome)}</label>`).join("")}</div>${dalGps.length ? `<span class="muted" style="font-size:.8rem">${esc(dalGps.join(", "))}: dalla Cronologia caricata</span>` : ""}</div>` : "";
+  return `<form class="lav-form" data-lavform="${k}" data-data="${data}" data-pid="${s.pid}">${chi}
+    <div class="chips">${opts.map((a, i) => `<label class="check"><input type="checkbox" id="lv-${k}-${i}" name="att" value="${esc(a)}" ${sel.has(a) ? "checked" : ""}>${esc(a)}</label>`).join("")}</div>
+    <input id="lv-new-${k}" name="nuova" placeholder="Altra lavorazione (si aggiunge all'elenco)" autocomplete="off">
+    <textarea id="lv-nota-${k}" name="nota" rows="2" placeholder="Note: materiali usati, cosa resta da fare, richieste del cliente…">${esc((w && w.nota) || "")}</textarea>
+    <div class="row"><button class="btn" type="submit">Salva lavori</button><button class="btn ghost" type="button" data-lavcancel>Annulla</button></div>
+  </form>`;
+}
+function historyFor(key, lim = 60) {
+  const items = [], count = new Map(), contati = new Set();
+  for (const g of giorniReali().sort((a, b) => b.data.localeCompare(a.data)))
+    for (const u of usciteDi(g)) for (const s of sosteDi(u)) {
+      const l = luogo(s); if ((l.named ? "n:" + l.nome : "p:" + s.pid) !== key) continue;
+      const lk = lavKey(g.data, s.pid), w = S.lavori[lk];
+      if (hasWork(w) && !contati.has(lk)) { contati.add(lk); for (const a of w.attivita || []) count.set(a, (count.get(a) || 0) + 1); }
+      // stessa visita caricata da più persone: una riga sola con tutti i nomi
+      const gia = items.find((x) => x.g.data === g.data && x.s.e > s.s && x.s.s < s.e);
+      if (gia) { if (!gia.chi.includes(g.persona)) gia.chi.push(g.persona); gia.s = { ...gia.s, s: Math.min(gia.s.s, s.s), e: Math.max(gia.s.e, s.e) }; continue; }
+      items.push({ g, s, w, chi: [g.persona] });
+    }
+  const sum = [...count.entries()].sort((a, b) => b[1] - a[1]);
+  return `<div class="hist-box">
+    ${sum.length ? `<div class="chips">${sum.map(([a, n]) => `<span class="chip">${esc(a)} <b class="num">×${n}</b></span>`).join("")}</div>` : `<p class="muted" style="margin:0">Nessun lavoro registrato qui. Aggiungili dalle giornate con "+ Lavori svolti".</p>`}
+    <ol class="hist-list">${items.slice(0, lim).map(({ g, s, w, chi }) => `<li><span class="mono">${dLong(g.data)}<br><span class="muted">${hhmm(s.s)}–${hhmm(s.e)} · ${esc(chi.map(nomeDi).join(", "))}</span></span>
+      <div class="work-box">${hasWork(w) ? chips(w) + (w.nota ? `<p class="nota">${esc(w.nota)}</p>` : "") : `<span class="muted">${dur((s.e - s.s) / 60000)} · nessun lavoro segnato</span>`}</div></li>`).join("")}</ol>
+  </div>`;
+}
+function editor(pid, p, gruppo, prefill) {
+  const own = S.luoghi[pid] || {};
+  const rif = gruppo || prefill;
+  const l = own.nome ? own : (rif ? (Object.values(S.luoghi).find((x) => x.nome === rif) || own) : own);
+  return `<form class="editor" data-form="${pid}" data-lat="${p.lat}" data-lng="${p.lng}" data-gruppo="${esc(gruppo || "")}">
+    <input id="nm-${pid}" name="nome" placeholder="Es. Rossi – via Roma 12" value="${esc(l.nome || "")}" autocomplete="off">
+    <select id="ct-${pid}" name="categoria">${Object.entries(CATS).filter(([k]) => k !== "altro" && k !== "nascosto").map(([k, c]) => `<option value="${k}" ${(l.categoria || "cliente") === k ? "selected" : ""}>${c.label}</option>`).join("")}<option value="altro" ${l.categoria === "altro" ? "selected" : ""}>Altro / personale</option><option value="nascosto">Nascondi: togli le sue soste</option></select>
+    <button class="btn" type="submit">Salva</button><button class="btn ghost" type="button" data-cancel>Annulla</button>
+  </form>`;
+}
+
+function viewLuoghi() {
+  const agg = new Map();
+  for (const g of giorniReali()) for (const u of usciteDi(g)) for (const s of sosteDi(u)) {
+    const l = luogo(s), k = l.named ? "n:" + l.nome : "p:" + s.pid;
+    const x = agg.get(k) || { p: s, min: 0, giorni: new Set(), ultimo: "", pos: new Set(), k };
+    aggiungi(x, s); x.giorni.add(g.data); x.pos.add(s.pid); if (g.data > x.ultimo) x.ultimo = g.data; agg.set(k, x);
+  }
+  const all = [...agg.values()];
+  if (!all.length) return `<div class="empty">Importa la Cronologia per vedere i luoghi.</div>`;
+  const nomeDiX = (x) => luogo(x.p);
+  const clienti = all.filter((x) => nomeDiX(x).named && nomeDiX(x).cat === "cliente").sort((a, b) => nomeDiX(a).nome.localeCompare(nomeDiX(b).nome, "it"));
+  const altri = all.filter((x) => nomeDiX(x).named && nomeDiX(x).cat !== "cliente").sort((a, b) => nomeDiX(a).nome.localeCompare(nomeDiX(b).nome, "it"));
+  const casaIo = casaDi(S.io);
+  const lontano = (x) => casaIo && Engine.dist(x.p, casaIo) > 100000;
+  const senzaTutte = all.filter((x) => !nomeDiX(x).named).sort((a, b) => b.giorni.size - a.giorni.size || b.min - a.min);
+  const senza = senzaTutte.filter((x) => !lontano(x)), lontane = senzaTutte.filter(lontano);
+  const riga = (x) => { const l = luogo(x.p); const hk = x.k; const hOpen = S.storico === hk && S.storicoRow === x.p.pid; return `<tr><td>
+      <div class="stop-line"><span class="sw ${CATS[l.cat].cls}"></span>${l.named && l.cat === "cliente" ? `<button class="nm linkname" data-scheda="${esc(l.nome)}">${esc(l.nome)}</button>` : `<span class="nm">${esc(l.nome)}</span>`}${l.named && l.cat !== "cliente" ? `<span class="muted" style="font-size:.82rem">${l.cat === "altro" ? "Altro / personale" : CATS[l.cat].label}</span>` : ""}<span class="muted" style="font-size:.82rem">${kmCasa(x.p)}${x.pos.size > 1 ? ` · ${x.pos.size} posizioni` : ""}</span>
+      <a class="maps" target="_blank" rel="noopener" href="${mapsUrl(x.p)}">Maps ↗</a>
+      <button class="linkish" data-edit="${x.p.pid}" data-lat="${x.p.lat}" data-lng="${x.p.lng}">${l.named ? "Modifica" : "Dai un nome"}</button>
+      ${l.named ? `<button class="linkish" data-storico="${esc(hk)}" data-row="${x.p.pid}" aria-expanded="${hOpen}">${hOpen ? "Chiudi storico" : "Storico lavori"}</button>` : ""}
+      ${S.editing === x.p.pid ? editor(x.p.pid, x.p, l.named ? l.nome : "") : ""}</div></td>
+      <td class="r num">${x.giorni.size}</td><td class="r num">${ore(x.min)}</td><td class="r num">${x.ultimo.slice(8)}/${x.ultimo.slice(5, 7)}</td></tr>
+      ${hOpen ? `<tr class="hist"><td colspan="4">${historyFor(hk)}</td></tr>` : ""}`; };
+  const tabella = (rows, primo) => `<div class="tbl"><table class="places"><thead><tr><th>${primo}</th><th class="r">Giorni</th><th class="r">Ore</th><th class="r">Ultima volta</th></tr></thead><tbody>${rows.map(riga).join("")}</tbody></table></div>`;
+  return `<div class="section">
+    <div class="section-head"><h2>Clienti</h2><span class="muted">${clienti.length} clienti, in ordine alfabetico</span></div>
+    ${clienti.length ? tabella(clienti, "Cliente") : `<p class="muted" style="margin:0">Nessun cliente ancora. Dai un nome alle soste qui sotto e scegli “Cliente”.</p>`}
+  </div>
+  ${altri.length ? `<div class="section">
+    <div class="section-head"><h2>Altri luoghi con nome</h2><span class="muted">Vivaio, acquisti e posti personali</span></div>
+    ${tabella(altri, "Luogo")}
+  </div>` : ""}
+  <div class="section">
+    <div class="section-head"><h2>Da assegnare</h2><span class="muted">${senza.length} soste senza nome · prima le più frequenti</span></div>
+    <p class="muted" style="margin:0;max-width:62ch">Apri la sosta su Maps per riconoscerla e tocca “Dai un nome”. Il nome vale anche per le soste entro 80 m, e la riga passa nell'elenco sopra.</p>
+    ${senza.length ? tabella(senza.slice(0, 120), "Sosta") : `<p class="muted" style="margin:0">Tutte le soste hanno un nome. 👏</p>`}
+  </div>
+  ${lontane.length ? `<details class="section lontane"${S.lontaneAperte ? " open" : ""}>
+    <summary class="section-head"><h2>Lontano da casa</h2><span class="muted">${lontane.length} soste senza nome oltre 100 km · tocca per vederle</span></summary>
+    ${tabella(lontane, "Sosta")}
+  </details>` : ""}`;
+}
+
+/* ---------- agenda ---------- */
+const FREQ = [7, 10, 14, 20, 30, 45, 60, 90];
+const oggiStr = () => Engine.localDate(Date.now());
+const ggTra = (a, b) => Math.round((Date.parse(b + "T12:00:00Z") - Date.parse(a + "T12:00:00Z")) / 864e5);
+const piuGiorni = (d, n) => { const x = new Date(d + "T12:00:00Z"); x.setUTCDate(x.getUTCDate() + n); return x.toISOString().slice(0, 10); };
+const slug = (n) => String(n).toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 120) || "cliente";
+// "I.B.S." e "I.B.S" sono lo stesso cliente: si riusa il nome già scritto (i nomi col "?" restano a parte)
+const nomeUguale = (n) => { if (!n || n.endsWith("?")) return n; const k = slug(n);
+  return [...Object.values(S.clienti).map((x) => x.nome), ...Object.values(S.luoghi).map((x) => x.nome)].find((x) => x && x !== n && !x.endsWith("?") && slug(x) === k) || n; };
+const cliente = (nome) => S.clienti[slug(nome)] || {};
+function visitePerNome() {
+  const m = new Map();
+  for (const g of giorniReali()) for (const u of usciteDi(g)) for (const s of sosteDi(u)) {
+    if (s.e - s.s < 20 * 60000) continue;
+    const l = luogo(s); if (!l.named) continue;
+    (m.get(l.nome) || m.set(l.nome, []).get(l.nome)).push({ data: g.data, s });
+  }
+  for (const v of m.values()) v.sort((a, b) => b.data.localeCompare(a.data) || b.s.s - a.s.s);
+  return m;
+}
+function ultimiLavori(v) {
+  for (const x of v || []) { const w = S.lavori[lavKey(x.data, x.s.pid)]; if (hasWork(w)) return { data: x.data, w }; }
+  return null;
+}
+function nomiClienti() {
+  const set = new Set();
+  for (const l of Object.values(S.luoghi)) if (l.nome && l.categoria === "cliente") set.add(l.nome);
+  for (const c of Object.values(S.clienti)) if (c.nome) set.add(c.nome);
+  return [...set].sort((a, b) => a.localeCompare(b, "it"));
+}
+const dataLabel = (d) => { const o = oggiStr(); if (d === o) return "Oggi"; if (d === piuGiorni(o, 1)) return "Domani"; return dLong(d); };
+async function putCliente(nome, patch) {
+  const id = slug(nome); const next = { ...(S.clienti[id] || {}), nome, ...patch };
+  for (const k of Object.keys(next)) if (next[k] === null) delete next[k];
+  S.clienti = { ...S.clienti, [id]: next }; render();
+  if (db) { try { await db.doc("clienti/" + id).set(next); } catch (e) { flash("Cliente non salvato: " + (e.message || e.code)); } }
+  else saveLocal();
+}
+async function rinominaGruppo(vecchio, nome, categoria) {
+  for (const [id, l] of Object.entries(S.luoghi)) if (l.nome === vecchio) await putLuogo(id, { nome, categoria });
+  await spostaCliente(vecchio, nome);
+}
+// quando un cliente cambia nome, le sue impostazioni (manutenzione, telefono, note…) lo seguono
+async function spostaCliente(vecchio, nome) {
+  if (!vecchio || !nome || vecchio === nome) return;
+  if (Object.values(S.luoghi).some((l) => l.nome === vecchio)) return; // il vecchio nome è ancora usato altrove
+  const c = S.clienti[slug(vecchio)];
+  if (c && slug(vecchio) !== slug(nome)) {
+    const { nome: _, ...resto } = c;
+    if (!S.clienti[slug(nome)]) await putCliente(nome, resto);
+    const next = { ...S.clienti }; delete next[slug(vecchio)]; S.clienti = next; render();
+    if (db) { try { await db.doc("clienti/" + slug(vecchio)).delete(); } catch {} } else saveLocal();
+  }
+}
+async function putRichiesta(id, val) {
+  const next = { ...S.richieste }; if (val) next[id] = val; else delete next[id];
+  S.richieste = next; render();
+  if (db) { try { val ? await db.doc("richieste/" + id).set(val) : await db.doc("richieste/" + id).delete(); } catch (e) { flash("Richiesta non salvata: " + (e.message || e.code)); } }
+  else saveLocal();
+}
+
+function modelloAgenda() {
+  const oggi = oggiStr(), vis = visitePerNome(), nomi = nomiClienti();
+  const manut = nomi.filter((n) => cliente(n).tipo === "manutenzione").map((n) => {
+    const c = cliente(n), v = vis.get(n) || [];
+    const mano = (c.fatti || []).slice().sort().pop() || null, gps = v[0] && v[0].data;
+    const ultima = [gps, mano].filter(Boolean).sort().pop(), daMano = !!mano && mano === ultima && mano !== gps;
+    const gg = ultima ? ggTra(ultima, oggi) : null, ogni = c.ogniGiorni || 20;
+    // giorno fissato superato: se dagli spostamenti risulta una visita dopo che è stato fissato, esce da "In programma"
+    const pianDa = c.pianificatoIl || (c.pianificato ? piuGiorni(c.pianificato, -7) : null);
+    const visitato = !!(c.pianificato && gps && gps >= pianDa);
+    const piano = visitato ? null : (c.pianificato || null);
+    return { n, c, v, ultima, daMano, piano, visitato, gg, ogni, ritardo: gg == null ? 9999 : gg - ogni };
+  }).sort((a, b) => b.ritardo - a.ritardo);
+  const chiamata = nomi.filter((n) => cliente(n).tipo === "chiamata");
+  const daClass = nomi.filter((n) => !cliente(n).tipo);
+  const rich = Object.entries(S.richieste).map(([id, r]) => ({ id, ...r }));
+  const aperte = rich.filter((r) => !r.fatta);
+  const fatte = rich.filter((r) => r.fatta).sort((a, b) => (b.fattaIl || "").localeCompare(a.fattaIl || "")).slice(0, 8);
+
+  const prog = [
+    ...aperte.filter((r) => r.quando).map((r) => ({ d: r.quando, chi: r.chi, html: richItem(r, vis, oggi) })),
+    ...manut.filter((m) => m.piano).map((m) => ({ d: m.piano, chi: m.c.chi, html: manutItem(m, oggi, true) })),
+  ].sort((a, b) => a.d.localeCompare(b.d));
+  const perData = new Map(); for (const p of prog) { const k = p.d < oggi ? "scaduto" : p.d; (perData.get(k) || perData.set(k, []).get(k)).push(p.html); }
+  const daPian = aperte.filter((r) => !r.quando).sort((a, b) => (b.urgente ? 1 : 0) - (a.urgente ? 1 : 0) || (a.creata || "").localeCompare(b.creata || ""));
+  const manutLibere = manut.filter((m) => !m.piano);
+  const scadute = manut.filter((m) => m.ritardo >= 0).length;
+  return { oggi, vis, nomi, manut, chiamata, daClass, rich, aperte, fatte, progTutti: prog, daPian, manutLibere, scadute };
+}
+function viewAgenda() {
+  const { oggi, vis, nomi, manut, chiamata, daClass, aperte, fatte, progTutti, daPian, manutLibere, scadute } = modelloAgenda();
+  const prog = progTutti.filter((p) => S.agChi === "tutti" || !p.chi || p.chi === S.agChi);
+  const perData = new Map(); for (const p of prog) { const k = p.d < oggi ? "scaduto" : p.d; (perData.get(k) || perData.set(k, []).get(k)).push(p.html); }
+  return `
+  <div class="section">
+    <div class="stats">
+      <div><span class="label">Richieste aperte</span><span class="big">${aperte.length}</span></div>
+      <div><span class="label">Urgenti</span><span class="big">${aperte.filter((r) => r.urgente).length}</span></div>
+      <div><span class="label">Manutenzioni scadute</span><span class="big">${scadute} <small>su ${manut.length}</small></span></div>
+      <div><span class="label">In programma</span><span class="big">${prog.filter((p) => p.d >= oggi).length}</span></div>
+    </div>
+  </div>
+  <div class="section">
+    <div class="section-head"><h2>Un cliente ha chiamato</h2></div>
+    <form class="card nuova" id="rich-form">
+      <datalist id="clienti-list">${nomi.map((n) => `<option value="${esc(n)}"></option>`).join("")}</datalist>
+      <div class="grid2">
+        <label class="field"><span class="label">Cliente</span><input id="r-cliente" name="cliente" list="clienti-list" placeholder="Nome o via" autocomplete="off" required></label>
+        <label class="field"><span class="label">Telefono</span><input id="r-tel" name="tel" type="tel" inputmode="tel" placeholder="Es. 333 123 4567" autocomplete="off"></label>
+        <label class="field"><span class="label">Quando andarci (facoltativo)</span><input id="r-quando" name="quando" type="date" min="${oggi}"></label>
+        <label class="field"><span class="label">Chi ci va</span><select id="r-chi" name="chi"><option value="">Da decidere</option>${persone().map((x) => `<option value="${x.id}">${esc(x.nome)}</option>`).join("")}</select></label>
+      </div>
+      <label class="field"><span class="label">Cosa serve</span><textarea id="r-testo" name="testo" rows="2" placeholder="Es. albero caduto in giardino, taglio siepe prima di sabato…"></textarea></label>
+      <div class="row-between"><label class="check"><input id="r-urg" type="checkbox" name="urgente">Urgente</label><button class="btn" type="submit">Aggiungi richiesta</button></div>
+    </form>
+  </div>
+  <div class="section">
+    <div class="section-head"><h2>In programma</h2><div class="months" role="group" aria-label="Di chi">${[{ id: "tutti", nome: "Tutti" }, ...persone()].map((x) => `<button data-agchi="${x.id}" aria-pressed="${x.id === S.agChi}">${esc(x.nome)}</button>`).join("")}</div></div>
+    ${prog.length ? [...perData.entries()].map(([k, items]) => `<div class="box"><div class="box-head${k === "scaduto" ? " late" : ""}"><b>${k === "scaduto" ? "Giorno passato, da rifissare" : dataLabel(k)}</b></div>${items.join("")}</div>`).join("")
+      : `<p class="muted" style="margin:0">Niente in programma. Fissa un giorno dalle richieste o dalle manutenzioni qui sotto.</p>`}
+  </div>
+  <div class="section">
+    <div class="section-head"><h2>Richieste da fissare</h2><span class="muted" style="font-size:.85rem">Prima le urgenti, poi le più vecchie.</span></div>
+    ${daPian.length ? `<div class="box">${daPian.map((r) => richItem(r, vis, oggi)).join("")}</div>` : `<p class="muted" style="margin:0">Nessuna richiesta in attesa.</p>`}
+  </div>
+  <div class="section">
+    <div class="section-head"><h2>Manutenzioni</h2><span class="muted" style="font-size:.85rem">Prima chi aspetta da più tempo rispetto alla sua frequenza.</span></div>
+    ${manutLibere.length ? `<div class="box">${manutLibere.map((m) => manutItem(m, oggi, false)).join("")}</div>`
+      : `<p class="muted" style="margin:0">${manut.length ? "Tutte le manutenzioni hanno già un giorno fissato." : "Nessun cliente in manutenzione. Classificali qui sotto."}</p>`}
+  </div>
+  ${chiamata.length ? `<div class="section"><div class="section-head"><h2>Clienti a chiamata</h2></div><div class="box">${chiamata.map((n) => { const v = vis.get(n) || [];
+    return `<div class="item"><div class="item-main"><b>${esc(n)}</b><span class="muted">${v[0] ? `Ultima visita ${dLong(v[0].data)} · ${ggTra(v[0].data, oggi)} giorni fa` : "Nessuna visita registrata"}</span></div>
+      <div class="item-side"><button class="linkish" data-ctipo="${esc(n)}" data-val="manutenzione">Passa a manutenzione</button></div></div>`; }).join("")}</div></div>` : ""}
+  ${daClass.length ? `<div class="section"><div class="section-head"><h2>Clienti da classificare</h2><span class="muted" style="font-size:.85rem">Scegli se il cliente ha una manutenzione periodica o chiama quando serve.</span></div>
+    <div class="box">${daClass.map((n) => `<div class="item"><div class="item-main"><b>${esc(n)}</b></div><div class="item-side">
+      <button class="btn ghost sm" data-ctipo="${esc(n)}" data-val="manutenzione">Manutenzione</button><button class="btn ghost sm" data-ctipo="${esc(n)}" data-val="chiamata">A chiamata</button></div></div>`).join("")}</div></div>` : ""}
+  ${fatte.length ? `<div class="section"><div class="section-head"><h2>Richieste completate</h2></div><div class="box">${fatte.map((r) => `<div class="item done"><div class="item-main"><b>${esc(r.cliente)}</b><span>${esc(r.testo || "")}</span><span class="muted">Fatta il ${r.fattaIl ? dLong(r.fattaIl) : "–"}</span></div>
+    <div class="item-side"><button class="linkish" data-rapri="${r.id}">Riapri</button>${S.confDel === r.id ? `<button class="btn danger sm" data-rdel="${r.id}">Conferma eliminazione</button>` : `<button class="linkish" data-rdelask="${r.id}">Elimina</button>`}</div></div>`).join("")}</div></div>` : ""}`;
+}
+function richItem(r, vis, oggi) {
+  const v = vis.get(r.cliente) || []; const passato = v.find((x) => x.data >= (r.creata || "9999"));
+  return `<div class="item${r.urgente ? " urgent" : ""}">
+    <div class="item-main">
+      <span class="item-title"><span class="tag">Richiesta</span><b>${esc(r.cliente)}</b>${r.urgente ? `<span class="pill crit">Urgente</span>` : ""}${passato ? `<span class="pill ok">Passato il ${dLong(passato.data)}</span>` : ""}</span>
+      ${r.testo ? `<span class="nota">${esc(r.testo)}</span>` : ""}
+      ${(r.tel || cliente(r.cliente).tel) ? `<span class="tel"><span class="mono">${esc(r.tel || cliente(r.cliente).tel)}</span><a class="maps" href="tel:${esc((r.tel || cliente(r.cliente).tel).replace(/[^0-9+]/g, ""))}">Chiama</a><button class="linkish" data-copy="${esc(r.tel || cliente(r.cliente).tel)}">Copia</button></span>` : ""}
+      <span class="muted" style="font-size:.82rem">Ha chiamato ${r.creata ? dLong(r.creata) + ` · ${ggTra(r.creata, oggi)} giorni fa` : ""}${r.da ? ` · segnata da ${esc(nomeDi(r.da))}` : ""}</span>
+    </div>
+    <div class="item-side">
+      <label class="date-pick"><span class="label">Giorno</span><input type="date" id="rq-${r.id}" data-rquando="${r.id}" value="${r.quando || ""}"></label>
+      <label class="date-pick"><span class="label">Chi</span><select id="rchi-${r.id}" data-rchi="${r.id}"><option value="">Da decidere</option>${persone().map((x) => `<option value="${x.id}" ${x.id === r.chi ? "selected" : ""}>${esc(x.nome)}</option>`).join("")}</select></label>
+      ${doneBar("r", r.id, oggi)}
+    </div>
+  </div>`;
+}
+const doneBar = (kind, key, oggi) => `<div class="done-bar"><label class="date-pick"><span class="label">Fatto il</span><input type="date" id="dd-${kind}-${slug(key)}" value="${oggi}" max="${oggi}" data-ddate="1"></label><label class="check done-check"><input type="checkbox" id="dk-${kind}-${slug(key)}" data-done="${kind}" data-key="${esc(key)}">Segna come fatto</label></div>`;
+function manutItem(m, oggi, inProgramma) {
+  const ratio = m.gg == null ? 1.5 : Math.min(m.gg / m.ogni, 1.5);
+  const stato = m.gg == null ? ["crit", "Mai visitato"] : m.ritardo > 0 ? ["crit", `In ritardo di ${m.ritardo} gg`] : m.ritardo === 0 ? ["warn", "Scade oggi"]
+    : m.gg >= m.ogni * 0.75 ? ["warn", `Scade tra ${-m.ritardo} gg`] : ["ok", `Prossima tra ${-m.ritardo} gg`];
+  const ul = ultimiLavori(m.v);
+  return `<div class="item">
+    <div class="item-main">
+      <span class="item-title"><span class="tag m">Manutenzione</span><b>${esc(m.n)}</b><span class="pill ${stato[0]}">${stato[1]}</span></span>
+      <span class="muted" style="font-size:.85rem">${m.ultima ? `Ultima visita ${dLong(m.ultima)} · ${m.gg} giorni fa${m.daMano ? ` · segnata a mano <button class="linkish" data-undofatto="${esc(m.n)}">annulla</button>` : ""}` : "Nessuna visita registrata"}</span>
+      <span class="meter" title="${m.gg ?? "–"} giorni su ${m.ogni}"><i class="${stato[0]}" style="width:${ratio / 1.5 * 100}%"></i><b style="left:${100 / 1.5}%"></b></span>
+      ${ul ? `<div class="chips">${(ul.w.attivita || []).map((a) => `<span class="chip">${esc(a)}</span>`).join("")}${ul.w.nota ? `<span class="muted" style="font-size:.82rem">${esc(ul.w.nota)}</span>` : ""}</div>` : ""}
+    </div>
+    <div class="item-side">
+      <label class="date-pick"><span class="label">Ogni</span><select id="cf-${slug(m.n)}" data-cfreq="${esc(m.n)}">${[...new Set([...FREQ, m.ogni])].sort((a, b) => a - b).map((f) => `<option value="${f}" ${f === m.ogni ? "selected" : ""}>${f} giorni</option>`).join("")}</select></label>
+      <label class="date-pick"><span class="label">Giorno</span><input type="date" id="cp-${slug(m.n)}" data-cpian="${esc(m.n)}" value="${m.piano || ""}"></label>
+      ${m.piano ? `<label class="date-pick"><span class="label">Chi</span><select id="cc-${slug(m.n)}" data-cchi="${esc(m.n)}"><option value="">Da decidere</option>${persone().map((x) => `<option value="${x.id}" ${x.id === m.c.chi ? "selected" : ""}>${esc(x.nome)}</option>`).join("")}</select></label>` : ""}
+      ${doneBar("m", m.n, oggi)}
+      ${inProgramma ? "" : `<button class="linkish" data-ctipo="${esc(m.n)}" data-val="chiamata">Passa a chiamata</button>`}
+    </div>
+  </div>`;
+}
+
+
+function viewOggi() {
+  if (!S.ready) return `<div class="empty">Carico il registro…</div>`;
+  const A = modelloAgenda(); const oggi = A.oggi, dom = piuGiorni(oggi, 1);
+  const mio = (p) => p.chi === S.io ? 0 : 1;
+  const ora = A.progTutti.filter((p) => p.d <= oggi).sort((a, b) => mio(a) - mio(b) || a.d.localeCompare(b.d));
+  const domani = A.progTutti.filter((p) => p.d === dom).sort((a, b) => mio(a) - mio(b));
+  const urgenti = A.daPian.filter((r) => r.urgente);
+  const ritardo = A.manutLibere.filter((m) => m.ritardo > 0).slice(0, 3);
+  const titolo = new Date(oggi + "T12:00:00").toLocaleDateString("it-IT", { weekday: "long", day: "numeric", month: "long" });
+  const lista = (arr) => `<div class="box">${arr.map((p) => (p.chi === S.io ? p.html.replace('<div class="item', '<div class="item mine') : p.html)).join("")}</div>`;
+  return `
+  <div class="section oggi-head">
+    <div><div class="label">Ciao ${esc(nomeDi(S.io))}</div><h2 class="oggi-title">${titolo}</h2></div>
+    <div class="oggi-btns"><button class="btn ghost" data-manapri="1">+ Segna dove siamo</button><button class="btn" data-go="agenda" data-focus="r-cliente">Un cliente ha chiamato</button></div>
+  </div>
+  <div class="section">
+    <div class="section-head"><h2>Da fare oggi</h2><span class="muted" style="font-size:.85rem">Prima le tue, poi quelle degli altri</span></div>
+    ${ora.length ? lista(ora) : `<p class="muted" style="margin:0">Niente fissato per oggi.</p>`}
+  </div>
+  ${urgenti.length ? `<div class="section"><div class="section-head"><h2>Urgenti, ancora senza giorno</h2></div><div class="box">${urgenti.map((r) => richItem(r, A.vis, oggi)).join("")}</div></div>` : ""}
+  <div class="section">
+    <div class="section-head"><h2>Manutenzioni più in ritardo</h2><button class="linkish" data-go="agenda">Vedi tutte</button></div>
+    ${ritardo.length ? `<div class="box">${ritardo.map((m) => manutItem(m, oggi, false)).join("")}</div>` : `<p class="muted" style="margin:0">Nessuna manutenzione in ritardo. 👍</p>`}
+  </div>
+  <div class="section">
+    <div class="section-head"><h2>Domani</h2></div>
+    ${domani.length ? lista(domani) : `<p class="muted" style="margin:0">Niente fissato per domani.</p>`}
+  </div>`;
+}
+
+function oreClientiMese(mese) {
+  const m = new Map();
+  for (const g of giorniReali()) {
+    if (!g.data.startsWith(mese)) continue;
+    for (const u of usciteDi(g)) { if (!incluso(g, u)) continue;
+      for (const s of sosteDi(u)) { const l = luogo(s); if (!l.named || l.cat !== "cliente") continue;
+        const x = m.get(l.nome) || { nome: l.nome, min: 0, giorni: new Set(), lavori: new Set() };
+        aggiungi(x, s); x.giorni.add(g.data);
+        const w = S.lavori[lavKey(g.data, s.pid)]; if (w) (w.attivita || []).forEach((a) => x.lavori.add(a));
+        m.set(l.nome, x); } }
+  }
+  return [...m.values()].sort((a, b) => b.min - a.min);
+}
+const mesiTutti = () => [...new Set(Object.values(S.giorni).map((g) => g.data.slice(0, 7)))].sort();
+const meseNome = (m) => new Date(m + "-15T12:00:00").toLocaleDateString("it-IT", { month: "long", year: "numeric" });
+
+function viewClienti() {
+  if (S.scheda) return viewScheda(S.scheda);
+  const mesi = mesiTutti();
+  if (!S.meseC || !mesi.includes(S.meseC)) S.meseC = mesi[mesi.length - 1];
+  const righe = S.meseC ? oreClientiMese(S.meseC) : [];
+  const tot = righe.reduce((a, x) => a + x.min, 0);
+  return `
+  <div class="section">
+    <div class="section-head"><h2>Ore per cliente</h2><span class="muted" style="font-size:.85rem">Tempo sul posto nelle giornate di lavoro, di tutti</span></div>
+    <div class="months" role="group" aria-label="Mese">${mesi.map((m) => `<button data-mesec="${m}" aria-pressed="${m === S.meseC}">${meseNome(m)}</button>`).join("")}</div>
+    ${righe.length ? `<div class="tbl"><table class="places"><thead><tr><th>Cliente</th><th class="r">Giorni</th><th class="r">Ore</th></tr></thead><tbody>
+      ${righe.map((x) => `<tr><td><button class="linkname" data-scheda="${esc(x.nome)}"><span class="sw c-cliente"></span>${esc(x.nome)}</button>${x.lavori.size ? `<div class="small-chips">${[...x.lavori].map(esc).join(" · ")}</div>` : ""}</td><td class="r num">${x.giorni.size}</td><td class="r num">${ore(x.min)}</td></tr>`).join("")}
+      <tr class="totrow"><td><b>Totale</b></td><td></td><td class="r num"><b>${ore(tot)}</b></td></tr>
+      </tbody></table></div>
+      <div><button class="btn ghost" id="csv-clienti">Scarica ore per cliente (CSV)</button> <span class="status muted" id="csvc-st"></span></div>` : `<p class="muted" style="margin:0">Nessuna ora dai clienti in questo mese.</p>`}
+  </div>
+  ${viewLuoghi()}`;
+}
+
+function viewScheda(nome) {
+  const c = cliente(nome), oggi = oggiStr();
+  const vis = visitePerNome().get(nome) || [];
+  const mano = (c.fatti || []).slice().sort().pop() || null, gps = vis[0] && vis[0].data;
+  const ultima = [gps, mano].filter(Boolean).sort().pop();
+  let minTot = 0, minMese = 0; const ivTot = [], ivMese = [], giorni = new Set(); const mese = oggi.slice(0, 7);
+  for (const g of giorniReali()) for (const u of usciteDi(g)) { if (!incluso(g, u)) continue;
+    for (const s of sosteDi(u)) { const l = luogo(s); if (!l.named || l.nome !== nome) continue; ivTot.push([s.s, s.e]); giorni.add(g.data); if (g.data.startsWith(mese)) ivMese.push([s.s, s.e]); } }
+  minTot = unione(ivTot); minMese = unione(ivMese);
+  const pos = Object.values(S.luoghi).find((l) => l.nome === nome);
+  const aperte = Object.entries(S.richieste).filter(([, r]) => !r.fatta && r.cliente === nome).map(([id, r]) => ({ id, ...r }));
+  const ogni = c.ogniGiorni || 20;
+  return `
+  <div class="section">
+    <div><button class="linkish" data-scheda="">← Tutti i clienti</button></div>
+    <div class="card">
+      <div class="section-head"><h2 style="font-size:1.6rem">${esc(nome)}</h2>${pos ? `<a class="maps" target="_blank" rel="noopener" href="${mapsUrl({ ...pos, pid: "" })}">Apri su Maps ↗</a>` : ""}</div>
+      <div class="stats">
+        <div><span class="label">Ultima visita</span><span class="big" style="font-size:1.2rem">${ultima ? dLong(ultima) : "–"}</span></div>
+        <div><span class="label">Giorni di lavoro</span><span class="big">${giorni.size}</span></div>
+        <div><span class="label">Ore in tutto</span><span class="big">${ore(minTot)}</span></div>
+        <div><span class="label">Ore questo mese</span><span class="big">${ore(minMese)}</span></div>
+      </div>
+      <form class="grid2" id="scheda-form" data-nome="${esc(nome)}">
+        <label class="field"><span class="label">Tipo di cliente</span><select id="sc-tipo" name="tipo"><option value="">Da decidere</option><option value="manutenzione" ${c.tipo === "manutenzione" ? "selected" : ""}>Manutenzione</option><option value="chiamata" ${c.tipo === "chiamata" ? "selected" : ""}>A chiamata</option></select></label>
+        <label class="field"><span class="label">Manutenzione ogni</span><select id="sc-ogni" name="ogni">${[...new Set([...FREQ, ogni])].sort((a, b) => a - b).map((f) => `<option value="${f}" ${f === ogni ? "selected" : ""}>${f} giorni</option>`).join("")}</select></label>
+        <label class="field"><span class="label">Telefono</span><input id="sc-tel" name="tel" type="tel" inputmode="tel" value="${esc(c.tel || "")}" placeholder="Es. 333 123 4567"></label>
+        <label class="field"><span class="label">Indirizzo</span><input id="sc-ind" name="indirizzo" value="${esc(c.indirizzo || "")}" placeholder="Via, numero, paese"></label>
+        <label class="field" style="grid-column:1/-1"><span class="label">Note fisse</span><textarea id="sc-note" name="note" rows="3" placeholder="Es. cancello con codice, cane in giardino, acqua dal rubinetto sul retro…">${esc(c.note || "")}</textarea></label>
+        <div class="field" style="justify-content:end"><button class="btn" type="submit">Salva scheda</button></div>
+      </form>
+      <form class="pos-box" id="pos-form" data-nome="${esc(nome)}">
+        <span class="label">Posizione sulla mappa</span>
+        <span class="muted" style="font-size:.85rem">${pos && pos.lat != null ? `Salvata: <span class="mono">${(+pos.lat).toFixed(5)}, ${(+pos.lng).toFixed(5)}</span>` : "Non ancora salvata"}</span>
+        <div class="man-nuovo"><input id="pos-in" name="pos" placeholder="Incolla coordinate o link di Maps" autocomplete="off"><button class="btn ghost sm" type="submit">Salva posizione</button></div>
+        <span class="muted" style="font-size:.8rem">${aiutoPosizione}</span>
+      </form>
+      ${c.tel ? `<span class="tel"><span class="mono">${esc(c.tel)}</span><a class="maps" href="tel:${esc(c.tel.replace(/[^0-9+]/g, ""))}">Chiama</a><button class="linkish" data-copy="${esc(c.tel)}">Copia</button></span>` : ""}
+    </div>
+  </div>
+  ${aperte.length ? `<div class="section"><div class="section-head"><h2>Richieste aperte</h2></div><div class="box">${aperte.map((r) => richItem(r, visitePerNome(), oggi)).join("")}</div></div>` : ""}
+  <div class="section">
+    <div class="section-head"><h2>Storico lavori</h2></div>
+    <div class="card">${historyFor("n:" + nome, S.storicoTutto ? 500 : 10)}${S.storicoTutto ? "" : `<button class="linkish" data-storicotutto="1">Mostra tutte le visite</button>`}</div>
+  </div>`;
+}
+
+async function esportaCsvClienti() {
+  const st = document.getElementById("csvc-st");
+  if (!dl) { st.textContent = "Il download non è disponibile in questa vista."; return; }
+  const righe = oreClientiMese(S.meseC);
+  const rows = [["Cliente", "Giorni", "Ore (h:mm)", "Date", "Lavori svolti"]];
+  for (const x of righe) rows.push([x.nome, x.giorni.size, oreCsv(x.min), [...x.giorni].sort().map((d) => d.slice(8) + "/" + d.slice(5, 7)).join(", "), [...x.lavori].join(", ")]);
+  const csv = "﻿" + rows.map((r) => r.map((c) => /[;"\n]/.test(String(c)) ? `"${String(c).replace(/"/g, '""')}"` : c).join(";")).join("\n");
+  try { await dl.save({ filename: `ore-clienti-${S.meseC}.csv`, data: new Blob([csv], { type: "text/csv" }) }); st.textContent = ""; }
+  catch { st.textContent = "Download annullato."; }
+}
+async function scaricaBackup() {
+  const st = document.getElementById("bk-st");
+  if (!dl) { st.textContent = "Il download non è disponibile in questa vista."; return; }
+  const dati = { creato: new Date().toISOString(), da: nomeDi(S.io), giorni: S.shared, giorniPrivatiMiei: S.privati, luoghi: S.luoghi, clienti: S.clienti, richieste: S.richieste, lavori: S.lavori, persone: persone(), lavorazioni: attivita(), case: S.case };
+  try { await dl.save({ filename: `registro-backup-${oggiStr()}.json`, data: new Blob([JSON.stringify(dati, null, 1)], { type: "application/json" }) }); st.textContent = "Backup scaricato."; }
+  catch { st.textContent = "Download annullato."; }
+}
+
+function viewImporta() {
+  const per = S.importPer || S.io, c = casaDi(per);
+  return `<div class="section">
+    <div class="card">
+      <h2>Carica la Cronologia</h2>
+      <p style="margin:0"><b>iPhone:</b> Google Maps → tocca la tua foto profilo → <b>Impostazioni</b> → <b>Contenuti personali</b> → <b>Esporta i dati della cronologia</b>. Salva il file in File o iCloud Drive.</p>
+      <p style="margin:0"><b>Android:</b> app <b>Impostazioni</b> → <b>Posizione</b> → <b>Servizi di localizzazione</b> → <b>Spostamenti</b> (o Timeline) → <b>Esporta dati di Spostamenti</b> → Continua → Salva. Il file finisce in Download.</p>
+      <p style="margin:0">Poi scegli di chi è e caricalo qui sotto.</p>
+      <p class="muted" style="margin:0">Ogni export contiene tutta la cronologia: ricaricarlo aggiorna le giornate e conserva i nomi dei luoghi e le scelte "conta / non contare".</p>
+      <label class="field" style="max-width:16rem"><span class="label">Di chi è questa Cronologia</span>${selPersona("imp-per", "per", per, 'data-impper="1"')}</label>
+      <label class="drop" id="drop">
+        <b>Trascina qui il file .json oppure sceglilo</b>
+        <input id="file" type="file" accept=".json,application/json">
+        ${importStato ? `<span class="status">${esc(importStato)}</span>` : ""}
+      </label>
+    </div>
+    <div class="card">
+      <h2>Casa di ${esc(nomeDi(per))}</h2>
+      <p class="muted" style="margin:0">La giornata inizia quando esci da questo punto e finisce quando ci rientri. Raggio di tolleranza in metri.</p>
+      ${c && c.lat != null ? `<p style="margin:0"><b>${esc(c.indirizzo || "Posizione di casa")}</b> <span class="muted mono">${(+c.lat).toFixed(5)}, ${(+c.lng).toFixed(5)}</span> <a class="maps" target="_blank" rel="noopener" href="${mapsUrl(c)}">Maps ↗</a></p>` : `<p class="notice" style="margin:0">Casa non impostata: verrà presa dal file al primo import.</p>`}
+      <form class="grid2" id="casa-form">
+        <label class="field"><span class="label">Indirizzo</span><input id="casa-ind" name="indirizzo" value="${esc(c && c.indirizzo || "")}"></label>
+        <label class="field"><span class="label">Coordinate (lat, lng)</span><input id="casa-geo" name="geo" value="${c && c.lat != null ? `${c.lat}, ${c.lng}` : ""}" placeholder="45.0618, 7.6321"></label>
+        <label class="field"><span class="label">Raggio (m)</span><input id="casa-r" name="raggio" type="number" min="50" max="1000" step="10" value="${c && c.raggio || 200}"></label>
+        <div class="field" style="justify-content:end"><button class="btn" type="submit">Salva casa</button></div>
+      </form>
+      <p class="muted" style="margin:0;font-size:.85rem">Dopo aver cambiato casa, ricarica il file per ricalcolare le giornate.</p>
+    </div>
+    ${Object.keys(S.nascosti).length ? `<div class="card">
+      <h2>I tuoi luoghi nascosti</h2>
+      <p class="muted" style="margin:0">Li vedi solo tu. Le soste in questi luoghi (e entro 80 m) vengono tolte dalle tue giornate e non arrivano agli altri. Il tempo resta nel totale della giornata come strada.</p>
+      <div class="chips">${Object.entries(S.nascosti).map(([id, l]) => `<span class="chip">${esc(l.nome || "Luogo")}<button class="x" type="button" data-unhide="${id}" aria-label="Ripristina ${esc(l.nome || "")}">↺</button></span>`).join("")}</div>
+    </div>` : ""}
+    <div class="card">
+      <h2>Persone</h2>
+      <p class="muted" style="margin:0">Chi usa il registro. Ognuno carica la propria Cronologia; clienti, lavori e agenda sono in comune.</p>
+      <form class="grid2" id="persone-form">${persone().map((x, i) => `<label class="field"><span class="label">Persona ${i + 1}</span><input id="pers-${x.id}" name="p-${x.id}" value="${esc(x.nome)}"></label>`).join("")}
+        <label class="field"><span class="label">Aggiungi persona</span><input id="pers-new" name="nuova" placeholder="Nome"></label>
+        <div class="field" style="justify-content:end"><button class="btn" type="submit">Salva persone</button></div></form>
+    </div>
+    <div class="card">
+      <h2>Lavorazioni</h2>
+      <p class="muted" style="margin:0">L'elenco da spuntare per ogni sosta. Togliere una voce non cancella i lavori già registrati.</p>
+      <div class="chips">${attivita().map((a, i) => `<span class="chip">${esc(a)}<button class="x" type="button" data-attdel="${i}" aria-label="Togli ${esc(a)}">×</button></span>`).join("")}</div>
+      <form class="editor" id="att-form"><input id="att-new" name="nuova" placeholder="Nuova lavorazione, es. Trattamento antiparassitario" autocomplete="off"><button class="btn" type="submit">Aggiungi</button></form>
+    </div>
+    <div class="card">
+      <h2>Backup</h2>
+      <p class="muted" style="margin:0">Un file con tutti i dati del registro (giornate, clienti, richieste, lavori), da tenere al sicuro. Ogni mese ne ricevi anche uno in automatico.</p>
+      <div><button class="btn ghost" id="backup">Scarica backup completo</button> <span class="status muted" id="bk-st"></span></div>
+    </div>
+    <div class="card">
+      <h2>Esporta</h2>
+      <p class="muted" style="margin:0">Un file CSV da aprire con Excel o Numbers, con una riga per ogni sosta delle giornate contate.</p>
+      <div><button class="btn ghost" id="csv">Scarica CSV (${S.mese ? nomePeriodo() : "ultimi 2 mesi"})</button> <span class="status muted" id="csv-st"></span></div>
+    </div>
+    ${typeof window.appImpostazioni === "function" ? window.appImpostazioni() : ""}
+  </div>`;
+}
+
+async function esportaCsv() {
+  const st = document.getElementById("csv-st");
+  if (!dl) { st.textContent = "Il download non è disponibile in questa vista."; return; }
+  const rows = [["Data", "Persona", "Uscita", "Arrivo", "Partenza", "Luogo", "Categoria", "Minuti sul posto", "Minuti di strada prima", "Ore giornata (h:mm)", "Lavori", "Note"]];
+  if (!S.mese) S.mese = "60";
+  const days = giorniVisti().filter((g) => inPeriodo(g.data)).sort((a, b) => a.data.localeCompare(b.data));
+  for (const g of days) { const sd = statDay(g); usciteDi(g).forEach((u, i) => { if (!incluso(g, u)) return; let prev = u.inizio;
+    for (const s of sosteDi(u)) { const l = luogo(s);
+      rows.push([g.data, nomeDi(g.persona), i + 1, hhmm(s.s), hhmm(s.e), l.nome, CATS[l.cat].label, Math.round((s.e - s.s) / 60000), Math.round((s.s - prev) / 60000), oreCsv(sd.fuori), ((S.lavori[lavKey(g.data, s.pid)] || {}).attivita || []).join(", "), (S.lavori[lavKey(g.data, s.pid)] || {}).nota || ""]); prev = s.e; }
+    rows.push([g.data, nomeDi(g.persona), i + 1, hhmm(u.fine), "", "Rientro a casa", "", "", Math.round((u.fine - prev) / 60000), oreCsv(sd.fuori)]); }); }
+  const csv = "﻿" + rows.map((r) => r.map((c) => /[;"\n]/.test(String(c)) ? `"${String(c).replace(/"/g, '""')}"` : c).join(";")).join("\n");
+  try { await dl.save({ filename: `giornate-${PERIODI[S.mese] ? (S.mese === "60" ? "ultimi-2-mesi" : "tutto") : S.mese}-${vista()}.csv`, data: new Blob([csv], { type: "text/csv" }) }); st.textContent = ""; }
+  catch (e) { st.textContent = "Download annullato."; }
+}
+
+/* ---------- eventi ---------- */
+document.addEventListener("click", (e) => {
+  const t = e.target.closest("button, a"); if (!t) return;
+  // su iPhone toccare un tasto non sempre toglie il cursore dal campo di prima: senza questo la pagina aspetta e il menu non si apre
+  { const ae = document.activeElement, f = t.closest("form"); if (ae && ae !== t && /^(INPUT|TEXTAREA)$/.test(ae.tagName) && !(f && f.contains(ae))) ae.blur(); }
+  if (t.hasAttribute("data-online")) { const k = t.dataset.online; S.popNome = t.dataset.nome; S.popOnline = S.popOnline === k ? null : k; disegnaOnline(); return; }
+  if (t.dataset.onlineChiudi) { S.popOnline = null; disegnaOnline(); return; }
+  if (t.dataset.manapri) { apriManuale(); S.tab = "giorni"; render(); const f = document.getElementById("man-form"); if (f) f.scrollIntoView({ block: "start" }); return; }
+  if (t.dataset.manchiudi) { S.man = null; render(); return; }
+  if (t.dataset.mantab) { S.man.tab = t.dataset.mantab; render(); return; }
+  if (t.dataset.manlett) { const g = document.getElementById("man-g-" + t.dataset.manlett), l = document.getElementById("man-list"); if (g && l) l.scrollTop = g.offsetTop; return; }
+  if (t.dataset.manpid) { S.man.pid = t.dataset.manpid; S.man.nuovo = ""; S.man.nuovoScelto = false; render(true); const i = document.getElementById("man-da"); if (i) i.focus(); return; }
+  if (t.dataset.mancambia) { S.man.pid = null; S.man.nuovo = ""; S.man.nuovoScelto = false; render(); return; }
+  if (t.dataset.mannuovo) { const v = ((document.getElementById("man-nuovo") || {}).value || "").trim(); if (v) { const esiste = Object.entries(S.luoghi).find(([, l]) => l.nome && l.nome.toLowerCase() === v.toLowerCase()); S.man.nuovo = v; S.man.pid = esiste ? esiste[0] : null; S.man.nuovoScelto = !esiste; document.activeElement && document.activeElement.blur(); render(true); } return; }
+  if (t.dataset.manadesso) { const n = new Date(); S.man[t.dataset.manadesso] = String(n.getHours()).padStart(2, "0") + ":" + String(n.getMinutes()).padStart(2, "0"); render(); return; }
+  if (t.dataset.delmanask) { S.confMan = t.dataset.delmanask; render(); return; }
+  if (t.dataset.delman) { eliminaManuale(t.dataset.delman); return; }
+  if (t.dataset.pioggia) { putPioggia(t.dataset.pioggia, t.dataset.val === "1"); return; }
+  if (t.dataset.tab) { S.tab = t.dataset.tab; S.editing = null; if (t.dataset.tab === "luoghi") S.scheda = null; try { localStorage.setItem("rg-tab", S.tab); } catch {} render(); return; }
+  if (t.dataset.ctipo) { putCliente(t.dataset.ctipo, { tipo: t.dataset.val, ...(t.dataset.val === "chiamata" ? { pianificato: null } : {}) }); return; }
+  if (t.dataset.copy) { const v = t.dataset.copy; try { navigator.clipboard.writeText(v).then(() => flash("Numero copiato: " + v), () => flash("Copia non riuscita: tieni premuto sul numero per copiarlo.")); } catch { flash("Copia non riuscita: tieni premuto sul numero per copiarlo."); } return; }
+  if (t.dataset.undofatto) { const c = cliente(t.dataset.undofatto); const f = (c.fatti || []).slice().sort(); f.pop(); putCliente(t.dataset.undofatto, { fatti: f }); return; }
+  if (t.dataset.rfatta) { const r = S.richieste[t.dataset.rfatta]; putRichiesta(t.dataset.rfatta, { ...r, fatta: true, fattaIl: oggiStr() }); flash(`Richiesta di ${r.cliente} segnata come fatta.`); return; }
+  if (t.dataset.rapri) { const r = { ...S.richieste[t.dataset.rapri], fatta: false }; delete r.fattaIl; putRichiesta(t.dataset.rapri, r); return; }
+  if (t.dataset.rdelask) { S.confDel = t.dataset.rdelask; render(); return; }
+  if (t.dataset.rdel) { S.confDel = null; putRichiesta(t.dataset.rdel, null); return; }
+  if (t.dataset.go) { S.tab = t.dataset.go; render(); if (t.dataset.focus) { const el = document.getElementById(t.dataset.focus); if (el) { el.scrollIntoView({ block: "center" }); el.focus(); } } return; }
+  if (t.dataset.mese) { S.mese = t.dataset.mese; S.aperti.clear(); render(); return; }
+  if (t.dataset.day) { S.aperti.has(t.dataset.day) ? S.aperti.delete(t.dataset.day) : S.aperti.add(t.dataset.day); render(); return; }
+  if (t.dataset.scelta) { const g = S.giorni[t.dataset.scelta]; const u = g.uscite.find((x) => x.id === t.dataset.id); putScelta(g._id, u.id, !incluso(g, u)); return; }
+  if (t.dataset.agchi) { S.agChi = t.dataset.agchi; render(); return; }
+  if (t.dataset.chi) { S.chi = t.dataset.chi; S.aperti.clear(); render(); return; }
+  if (t.dataset.edit) { S.editing = S.editing === t.dataset.edit ? null : t.dataset.edit; render(); const i = document.getElementById("nm-" + S.editing); if (i) i.focus(); return; }
+  if (t.hasAttribute("data-cancel")) { S.editing = null; document.activeElement.blur(); render(); return; }
+  if (t.id === "csv") { esportaCsv(); return; }
+  if (t.id === "csv-clienti") { esportaCsvClienti(); return; }
+  if (t.dataset.storicotutto) { S.storicoTutto = true; render(); return; }
+  if (t.id === "backup") { scaricaBackup(); return; }
+  if (t.dataset.mesec) { S.meseC = t.dataset.mesec; render(); return; }
+  if (t.dataset.scheda !== undefined && t.hasAttribute("data-scheda")) { S.scheda = t.dataset.scheda || null; S.storicoTutto = false; S.tab = "luoghi"; render(); window.scrollTo(0, 0); return; }
+  if (t.dataset.lav) { const same = S.lavEdit === t.dataset.lav && S.lavAt === t.dataset.at; S.lavEdit = same ? null : t.dataset.lav; S.lavAt = same ? null : t.dataset.at; render(); return; }
+  if (t.dataset.corr) { S.corrEdit = S.corrEdit === t.dataset.corr ? null : t.dataset.corr; render(); return; }
+  if (t.hasAttribute("data-corrcancel")) { S.corrEdit = null; render(); return; }
+  if (t.dataset.corrdel) { if (S.admin) putCorrezione(t.dataset.corrdel, null); return; }
+  if (t.hasAttribute("data-lavcancel")) { S.lavEdit = null; document.activeElement.blur(); render(); return; }
+  if (t.dataset.storico) { const same = S.storico === t.dataset.storico && S.storicoRow === t.dataset.row; S.storico = same ? null : t.dataset.storico; S.storicoRow = same ? null : t.dataset.row; render(); return; }
+  if (t.dataset.unhide) { const next = { ...S.nascosti }; delete next[t.dataset.unhide]; salvaNascosti(next); flash("Luogo ripristinato: le sue soste torneranno al prossimo import della Cronologia."); return; }
+  if (t.dataset.attdel) { const l = attivita().slice(); l.splice(+t.dataset.attdel, 1); putAttivita(l); return; }
+});
+document.addEventListener("submit", (e) => {
+  e.preventDefault();
+  const f = e.target;
+  if (f.dataset.form) {
+    const nome = nomeUguale(f.nome.value.trim()), categoria = f.categoria.value, gruppo = f.dataset.gruppo;
+    if (!nome && categoria !== "nascosto") { flash("Scrivi il nome prima di salvare."); const i = f.nome; if (i) i.focus(); return; }
+    S.editing = null; document.activeElement.blur();
+    if (categoria === "nascosto") { nascondi(f.dataset.form, nome || (luogo({ pid: f.dataset.form, lat: +f.dataset.lat, lng: +f.dataset.lng }).nome), +f.dataset.lat, +f.dataset.lng); return; }
+    if (gruppo && nome) { rinominaGruppo(gruppo, nome, categoria); return; }
+    const vecchio = (S.luoghi[f.dataset.form] || {}).nome;
+    putLuogo(f.dataset.form, { nome, categoria, lat: +f.dataset.lat, lng: +f.dataset.lng }).then(() => spostaCliente(vecchio, nome));
+  } else if (f.dataset.corrform) {
+    const nome = f.nome.value; if (!nome) { flash("Scegli il cliente giusto."); return; }
+    if (!S.admin) return;
+    const sms = +f.dataset.s; document.activeElement.blur();
+    putCorrezione(f.dataset.corrform, { data: dataDi(sms), pid: f.dataset.pid, s: sms, nome, da: S.io });
+  } else if (f.dataset.lavform) {
+    const att = [...f.querySelectorAll('input[name="att"]:checked')].map((x) => x.value);
+    const nuove = f.nuova.value.split(",").map((x) => x.trim()).filter(Boolean);
+    const lista = attivita().slice();
+    for (const n of nuove) { if (!att.includes(n)) att.push(n); if (!lista.includes(n)) lista.push(n); }
+    if (lista.length !== attivita().length) putAttivita(lista);
+    const nota = f.nota.value.trim();
+    S.lavEdit = null; document.activeElement.blur();
+    const box = [...f.querySelectorAll('input[name="chi"]')], editabili = new Set(box.map((x) => x.value));
+    const prima = ((S.lavori[f.dataset.lavform] || {}).assenti || []).filter((x) => !editabili.has(x));
+    const assenti = [...prima, ...box.filter((x) => !x.checked).map((x) => x.value)];
+    putLavoro(f.dataset.lavform, att.length || nota || assenti.length ? { data: f.dataset.data, pid: f.dataset.pid, attivita: att, nota, ...(assenti.length ? { assenti } : {}) } : null);
+  } else if (f.id === "scheda-form") {
+    const nome = f.dataset.nome; document.activeElement.blur();
+    putCliente(nome, { tipo: f.tipo.value || null, ogniGiorni: +f.ogni.value, tel: f.tel.value.trim() || null, indirizzo: f.indirizzo.value.trim() || null, note: f.note.value.trim() || null });
+    flash(`Scheda di ${nome} salvata.`);
+  } else if (f.id === "pos-form") {
+    const v = f.pos.value; document.activeElement && document.activeElement.blur();
+    salvaPosizioneCliente(f.dataset.nome, v).then((ok) => { if (ok) render(true); });
+  } else if (f.id === "man-form") {
+    document.activeElement && document.activeElement.blur();
+    salvaManuale();
+  } else if (f.id === "pioggia-form") {
+    const d = f.d.value; if (!d) return; document.activeElement.blur();
+    putPioggia(d, true); flash(`☔ ${dLong(d)} segnato come giornata di pioggia.`);
+  } else if (f.id === "rich-form") {
+    const cl = f.cliente.value.trim(); if (!cl) return;
+    const nome = nomiClienti().find((n) => n.toLowerCase() === cl.toLowerCase()) || cl;
+    const r = { cliente: nome, testo: f.testo.value.trim(), creata: oggiStr(), urgente: f.urgente.checked, fatta: false };
+    if (f.quando.value) r.quando = f.quando.value;
+    if (f.chi.value) r.chi = f.chi.value;
+    const tel = f.tel.value.trim();
+    if (tel) { r.tel = tel; if (cliente(nome).tel !== tel) putCliente(nome, { tel }); }
+    r.da = S.io;
+    document.activeElement.blur(); f.reset();
+    putRichiesta("r" + Date.now().toString(36), r);
+    flash(`Richiesta di ${nome} aggiunta.`);
+  } else if (f.id === "persone-form") {
+    const lista = persone().map((x) => ({ id: x.id, nome: (f["p-" + x.id].value || "").trim() || x.nome }));
+    const nuovo = f.nuova.value.trim();
+    if (nuovo) { let id = slug(nuovo); while (lista.some((x) => x.id === id)) id += "-2"; lista.push({ id, nome: nuovo }); }
+    document.activeElement.blur(); putPersone(lista); flash("Persone salvate.");
+  } else if (f.id === "att-form") {
+    const nuove = f.nuova.value.split(",").map((x) => x.trim()).filter(Boolean);
+    const lista = attivita().slice(); for (const n of nuove) if (!lista.includes(n)) lista.push(n);
+    document.activeElement.blur(); f.nuova.value = "";
+    if (nuove.length) putAttivita(lista);
+  } else if (f.id === "casa-form") {
+    const m = /(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)/.exec(f.geo.value);
+    if (!m) { flash("Scrivi le coordinate come: 45.0618, 7.6321"); return; }
+    document.activeElement.blur();
+    putCasa(S.importPer || S.io, { lat: +m[1], lng: +m[2], raggio: Math.max(50, +f.raggio.value || 200), indirizzo: f.indirizzo.value.trim() });
+    flash("Casa salvata. Ricarica il file per ricalcolare le giornate.");
+  }
+});
+document.addEventListener("input", (e) => {
+  const t = e.target; if (!S.man) return;
+  if (t.dataset.manora) {
+    const d = t.value.replace(/\D/g, "").slice(0, 4);
+    const v = d.length === 4 ? d.slice(0, 2) + ":" + d.slice(2) : d;
+    if (t.value !== v) t.value = v; S.man[t.dataset.manora] = v;
+    if (d.length === 4 && t.dataset.manora === "da") { const n = document.getElementById("man-a"); if (n && !n.value) n.focus(); }
+    const du = document.querySelector(".man-dur");
+    if (du && S.man.da.length === 5 && S.man.a.length === 5) { const m = (+S.man.a.slice(0, 2) * 60 + +S.man.a.slice(3)) - (+S.man.da.slice(0, 2) * 60 + +S.man.da.slice(3)); du.textContent = m > 0 ? dur(m) : "–"; }
+  } else if (t.dataset.man === "cerca") { S.man.cerca = t.value; const pos = t.selectionStart; render(true); const i = document.getElementById("man-cerca"); if (i) { i.focus(); i.setSelectionRange(pos, pos); } }
+  else if (t.dataset.man) S.man[t.dataset.man] = t.value;
+});
+document.addEventListener("change", (e) => {
+  const t = e.target;
+  if (S.man && t.dataset.manp) { const id = t.dataset.manp; S.man.persone = t.checked ? [...new Set([...S.man.persone, id])] : S.man.persone.filter((x) => x !== id); return; }
+  if (S.man && t.dataset.manatt) { const a = t.dataset.manatt; S.man.att = t.checked ? [...new Set([...S.man.att, a])] : S.man.att.filter((x) => x !== a); return; }
+  if (S.man && t.dataset.manora) { // all'uscita dal campo: 730 → 07:30, 7 → 07:00
+    const d = t.value.replace(/\D/g, ""); let v = t.value;
+    if (d.length === 3) v = "0" + d[0] + ":" + d.slice(1); else if (d.length <= 2 && d.length) v = d.padStart(2, "0") + ":00"; else if (d.length === 4) v = d.slice(0, 2) + ":" + d.slice(2);
+    t.value = v; S.man[t.dataset.manora] = v; return;
+  }
+  if (S.man && t.dataset.man === "data") { S.man.data = t.value || oggiStr(); return; }
+  if (t.id === "file" && t.files[0]) importa(t.files[0]);
+  else if (t.dataset.io) { S.io = t.value; S.chi = null; S.importPer = null; try { localStorage.setItem("rg-io", S.io); } catch {} render(); }
+  else if (t.dataset.impper) { S.importPer = t.value; render(); }
+  else if (t.dataset.rchi) { const r = { ...S.richieste[t.dataset.rchi], chi: t.value }; putRichiesta(t.dataset.rchi, r); }
+  else if (t.dataset.cchi) putCliente(t.dataset.cchi, { chi: t.value || null });
+  else if (t.dataset.rquando) { const r = S.richieste[t.dataset.rquando]; const q = { ...r, quando: t.value || null }; if (!t.value) delete q.quando; putRichiesta(t.dataset.rquando, q); }
+  else if (t.dataset.cpian) putCliente(t.dataset.cpian, { pianificato: t.value || null, pianificatoIl: t.value ? oggiStr() : null });
+  else if (t.dataset.cfreq) putCliente(t.dataset.cfreq, { ogniGiorni: +t.value });
+  else if (t.dataset.done && t.checked) {
+    const bar = t.closest(".done-bar"), d = (bar.querySelector("[data-ddate]") || {}).value || oggiStr(), k = t.dataset.key;
+    if (t.dataset.done === "r") { const r = S.richieste[k]; putRichiesta(k, { ...r, fatta: true, fattaIl: d }); flash(`Richiesta di ${r.cliente} fatta il ${dLong(d)}.`); }
+    else { const c = cliente(k); putCliente(k, { fatti: [...new Set([...(c.fatti || []), d])].sort().slice(-30), pianificato: null, chi: null }); flash(`Manutenzione da ${k} segnata: fatta il ${dLong(d)}.`); }
+  }
+});
+document.addEventListener("dragover", (e) => { const d = e.target.closest && e.target.closest("#drop"); if (d) { e.preventDefault(); d.classList.add("over"); } });
+document.addEventListener("dragleave", (e) => { const d = e.target.closest && e.target.closest("#drop"); if (d) d.classList.remove("over"); });
+document.addEventListener("drop", (e) => { const d = e.target.closest && e.target.closest("#drop"); if (d) { e.preventDefault(); d.classList.remove("over"); const f = e.dataTransfer.files[0]; if (f) importa(f); } });
+document.addEventListener("toggle", (e) => { if (e.target.classList && e.target.classList.contains("lontane")) S.lontaneAperte = e.target.open; }, true);
+document.addEventListener("focusin", (e) => { if (e.target.closest && e.target.closest(".editor")) S.editing = S.editing || e.target.closest(".editor").dataset.form; });
+
+try { const t = localStorage.getItem("rg-tab"); if (t) S.tab = t; const io = localStorage.getItem("rg-io"); if (io) S.io = io; } catch {}
+window.__registro = { S, render: (f) => render(f), flash, persone }; // per l'app installabile
+render();
+initStore();
+initOnline();
+})();
+</script>
+
+</body>
+</html>
