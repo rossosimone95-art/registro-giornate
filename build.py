@@ -30,7 +30,7 @@ TESTA = """<!doctype html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Registro Giornate</title>
-<meta name="theme-color" content="#2E6A3E">
+<meta name="theme-color" content="#FFFFFF" media="(prefers-color-scheme: light)"><meta name="theme-color" content="#0B0B0B" media="(prefers-color-scheme: dark)">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Registro">
@@ -39,8 +39,8 @@ TESTA = """<!doctype html>
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <style>
-body { background: var(--bg, #F2F4EF); padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inset-bottom) }
-#accesso { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; padding: 16px; background: var(--bg, #F2F4EF) }
+body { background: var(--bg, #FFFFFF); padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inset-bottom) }
+#accesso { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; padding: 16px; background: var(--bg, #FFFFFF) }
 #accesso[hidden] { display: none }
 .acc-card { width: min(420px, 100%); background: var(--surface, #fff); border: 1px solid var(--line, #DAE0D6); border-radius: 16px; padding: 24px 20px; display: grid; gap: 12px }
 .acc-card img { width: 64px; height: 64px; border-radius: 14px }
