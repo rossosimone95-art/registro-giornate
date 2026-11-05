@@ -178,6 +178,15 @@ a.maps:hover { text-decoration: underline }
 .card ol { margin: 0; padding-left: 1.2rem; display: flex; flex-direction: column; gap: 4px; max-width: 62ch }
 .drop { border: 2px dashed var(--line); border-radius: 12px; padding: 24px; text-align: center; display: flex; flex-direction: column; gap: 10px; align-items: center }
 .drop.over { border-color: var(--accent); background: var(--accent-soft) }
+.el-riga { display: grid; gap: 6px; padding: 12px 14px; border-top: 1px solid var(--line) }
+.el-riga:first-of-type { border-top: 0 }
+.el-riga.off { opacity: .55 }
+.el-riga .el-top { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px }
+.el-riga input[type=text] { width: 100%; max-width: 22rem }
+.el-info { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: .88rem }
+details.el-carica > summary { cursor: pointer; font-weight: 700; color: var(--accent); list-style: none }
+details.el-carica > summary::-webkit-details-marker { display: none }
+details.el-carica[open] { display: grid; gap: 10px }
 .status { font-size: .9rem }
 .empty { padding: 36px 20px; text-align: center; color: var(--muted); background: var(--surface); border: 1px dashed var(--line); border-radius: 12px }
 .notice { padding: 10px 14px; border-radius: 10px; background: var(--warn-soft); color: var(--warn); font-size: .9rem }
@@ -1771,6 +1780,7 @@ function viewAgenda() {
       <div class="row-between"><label class="check"><input id="r-urg" type="checkbox" name="urgente">Urgente</label><button class="btn" type="submit">Aggiungi richiesta</button></div>
     </form>
   </div>
+  ${S.elenco ? viewElenco(vis) : elencoCarica()}
   <div class="section">
     <div class="section-head"><h2>In programma</h2><div class="months" role="group" aria-label="Di chi">${[{ id: "tutti", nome: "Tutti" }, ...persone()].map((x) => `<button data-agchi="${x.id}" aria-pressed="${x.id === S.agChi}">${esc(x.nome)}</button>`).join("")}</div></div>
     ${prog.length ? [...perData.entries()].map(([k, items]) => `<div class="box"><div class="box-head${k === "scaduto" ? " late" : ""}"><b>${k === "scaduto" ? "Giorno passato, da rifissare" : dataLabel(k)}</b></div>${items.join("")}</div>`).join("")
@@ -1793,6 +1803,112 @@ function viewAgenda() {
       <button class="btn ghost sm" data-ctipo="${esc(n)}" data-val="manutenzione">Manutenzione</button><button class="btn ghost sm" data-ctipo="${esc(n)}" data-val="chiamata">A chiamata</button></div></div>`).join("")}</div></div>` : ""}
   ${fatte.length ? `<div class="section"><div class="section-head"><h2>Richieste completate</h2></div><div class="box">${fatte.map((r) => `<div class="item done"><div class="item-main"><b>${esc(r.cliente)}</b><span>${esc(r.testo || "")}</span><span class="muted">Fatta il ${r.fattaIl ? dLong(r.fattaIl) : "–"}</span></div>
     <div class="item-side"><button class="linkish" data-rapri="${r.id}">Riapri</button>${S.confDel === r.id ? `<button class="btn danger sm" data-rdel="${r.id}">Conferma eliminazione</button>` : `<button class="linkish" data-rdelask="${r.id}">Elimina</button>`}</div></div>`).join("")}</div></div>` : ""}`;
+}
+// ── Elenco lavori dal foglio: prima di salvarlo si incrocia con clienti, spostamenti e richieste già aperte
+const EL_STOP = new Set(["cond", "condominio", "via", "v", "viale", "corso", "sig", "ra", "sigra", "signora", "piazza", "amica", "amico"]);
+const elTok = (n) => slug(n).split("-").filter((x) => x.length > 1 && !EL_STOP.has(x) && !/^\d+$/.test(x));
+function elDist(a, b) { // quante lettere cambiano tra due parole (Macchiavelli / Machiavelli = 1)
+  let r = Array.from({ length: b.length + 1 }, (_, j) => j);
+  for (let i = 1; i <= a.length; i++) { const n = [i]; for (let j = 1; j <= b.length; j++) n[j] = Math.min(r[j] + 1, n[j - 1] + 1, r[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)); r = n; }
+  return r[b.length];
+}
+const elTokUguali = (a, b) => a === b || (a.length >= 5 && b.length >= 5 && a[0] === b[0] && elDist(a, b) <= (Math.min(a.length, b.length) >= 8 ? 2 : 1));
+function elMatch(nome) {
+  const a = elTok(nome); if (!a.length) return null;
+  let best = null, bs = 0;
+  for (const n of nomiClienti()) {
+    if (slug(n) === slug(nome)) return n;
+    const b = elTok(n); if (!b.length) continue;
+    const comuni = a.filter((x) => b.some((y) => elTokUguali(x, y))).length; if (!comuni) continue;
+    let sc = comuni / Math.max(a.length, b.length);
+    if (comuni === a.length || comuni === b.length) sc = Math.max(sc, 0.75);
+    if (sc > bs) { bs = sc; best = n; }
+  }
+  return bs >= 0.5 ? best : null;
+}
+function elStato(r, vis) {
+  const scritto = (r.cliente || "").trim();
+  const nome = nomiClienti().find((n) => n.toLowerCase() === scritto.toLowerCase()) || null;
+  const v = nome ? (vis.get(nome) || []) : [];
+  const gps = new Set(v.map((x) => x.data)), fatti = new Set(nome ? (cliente(nome).fatti || []) : []);
+  const ultima = [v[0] && v[0].data, ...fatti].filter(Boolean).sort().pop() || null;
+  if (r.tipo === "dafare") {
+    const dop = !!nome && Object.values(S.richieste).some((q) => !q.fatta && q.cliente === nome && (q.testo || "").trim().toLowerCase() === (r.testo || "").trim().toLowerCase());
+    return { nome, ultima, dop, nuove: [], gia: [] };
+  }
+  return { nome, ultima, dop: false, nuove: (r.date || []).filter((d) => !gps.has(d) && !fatti.has(d)), gia: (r.date || []).filter((d) => gps.has(d) || fatti.has(d)) };
+}
+async function caricaElenco(file) {
+  let raw; try { raw = JSON.parse(await file.text()); } catch { flash("Il file non è un elenco valido: serve il file .json preparato da Claude."); return; }
+  const righe = (Array.isArray(raw) ? raw : raw.righe || []).filter((r) => r && r.nome && ["dafare", "visita", "fatto"].includes(r.tipo));
+  if (!righe.length) { flash("Nel file non ci sono righe da importare."); return; }
+  const vis = visitePerNome();
+  S.elenco = { titolo: raw.titolo || file.name, rif: raw.riferimento || null, righe: righe.map((r) => {
+    const x = { ...r, date: (r.date || []).filter((d) => /^\d{4}-\d{2}-\d{2}$/.test(d)), cliente: elMatch(r.nome) || r.nome };
+    const st = elStato(x, vis); x.si = r.tipo === "dafare" ? !st.dop : !(st.nome && !st.nuove.length);
+    return x; }) };
+  render(); const el = document.getElementById("elenco"); if (el) el.scrollIntoView({ block: "start" });
+}
+async function applicaElenco() {
+  const E = S.elenco; if (!E) return;
+  const vis = visitePerNome(), oggi = oggiStr(), base = Date.now().toString(36);
+  const clienti = { ...S.clienti }, richieste = { ...S.richieste }, scritti = new Set(), nuoveRich = [];
+  let date = 0, nuovi = 0;
+  const cli = (nome) => clienti[slug(nome)] || {};
+  const metti = (nome, patch) => { const id = slug(nome); clienti[id] = { ...(clienti[id] || {}), nome, ...patch }; scritti.add(id); };
+  for (const [i, r] of E.righe.entries()) {
+    if (!r.si || !(r.cliente || "").trim()) continue;
+    const st = elStato(r, vis), nome = st.nome || nomeUguale(r.cliente.trim());
+    if (!clienti[slug(nome)]) { metti(nome, r.tel ? { tel: r.tel } : {}); nuovi++; }
+    else if (r.tel && !cli(nome).tel) metti(nome, { tel: r.tel });
+    if (r.tipo === "dafare") {
+      if (st.dop) continue;
+      const q = { cliente: nome, testo: r.testo || "", creata: oggi, urgente: false, fatta: false, da: S.io, daElenco: E.titolo };
+      if (r.tel) q.tel = r.tel;
+      const id = "r" + base + "e" + i; richieste[id] = q; nuoveRich.push(id);
+    } else {
+      const nuove = st.nuove.filter((d) => !(cli(nome).fatti || []).includes(d));
+      if (nuove.length) { metti(nome, { fatti: [...new Set([...(cli(nome).fatti || []), ...nuove])].sort().slice(-30) }); date += nuove.length; }
+    }
+  }
+  S.elenco = null; S.clienti = clienti; S.richieste = richieste; render();
+  if (db) {
+    const ops = [...[...scritti].map((id) => ["clienti/" + id, clienti[id]]), ...nuoveRich.map((id) => ["richieste/" + id, richieste[id]])];
+    try { if (db.scrivi) await db.scrivi(ops); else await Promise.all(ops.map(([path, d]) => db.doc(path).set(d))); }
+    catch (e) { flash("Elenco salvato solo in parte: " + (e.message || e.code) + ". Riprova a importarlo: le righe già salvate non vengono doppiate."); return; }
+  } else saveLocal();
+  const ric = nuoveRich.length;
+  flash(`Elenco importato: ${ric} ${ric === 1 ? "richiesta" : "richieste"} da fissare, ${date} ${date === 1 ? "data" : "date"} di visita aggiunte${nuovi ? `, ${nuovi} clienti nuovi da classificare` : ""}.`);
+}
+const elencoCarica = () => `<div class="section"><details class="card el-carica"><summary>Importa un elenco di lavori</summary>
+  <p class="muted" style="margin:0">Il file .json che Claude prepara dalla foto del foglio. Prima di salvare puoi controllare a quale cliente va ogni riga.</p>
+  <label class="drop"><b>Scegli il file dell'elenco</b><input id="elenco-file" type="file" accept=".json,application/json"></label></details></div>`;
+function viewElenco(vis) {
+  const E = S.elenco, n = E.righe.filter((r) => r.si).length;
+  const gruppi = [["dafare", "Lavori da fare", "Diventano richieste da fissare."], ["visita", "Visitati una volta", "La data va nello storico del cliente."], ["fatto", "Già ripassati", "Le date vanno nello storico del cliente."]];
+  return `<div class="section" id="elenco">
+    <div class="section-head"><h2>Elenco dal foglio</h2><span class="muted" style="font-size:.85rem">${esc(E.titolo)}</span></div>
+    <p class="muted" style="margin:0">Controlla il cliente di ogni riga: puoi scegliere un nome già nel registro o scriverne uno nuovo. Le date che risultano già dagli spostamenti non vengono aggiunte di nuovo.</p>
+    <datalist id="el-clienti">${nomiClienti().map((x) => `<option value="${esc(x)}"></option>`).join("")}</datalist>
+    ${gruppi.map(([tipo, tit, sub]) => { const rr = E.righe.map((r, i) => [r, i]).filter(([r]) => r.tipo === tipo); if (!rr.length) return "";
+      return `<div class="box"><div class="box-head"><b>${tit}</b> <span class="muted" style="font-weight:400;text-transform:none">· ${sub}</span></div>${rr.map(([r, i]) => elRiga(r, i, vis, E.rif)).join("")}</div>`; }).join("")}
+    <div class="row-between"><button class="btn ghost" type="button" data-elannulla="1">Annulla</button><button class="btn" type="button" data-elapplica="1" ${n ? "" : "disabled"}>Importa ${n} ${n === 1 ? "riga" : "righe"}</button></div>
+  </div>`;
+}
+function elRiga(r, i, vis, rif) {
+  const st = elStato(r, vis);
+  const azione = r.tipo === "dafare"
+    ? (st.dop ? `<span class="pill">C'è già una richiesta uguale aperta</span>` : `<span>Nuova richiesta${r.testo ? `: <b>${esc(r.testo)}</b>` : ""}</span>`)
+    : [st.nuove.length ? `<span>Aggiunge visita del ${st.nuove.map(dLong).join(" e ")}</span>` : "", st.gia.length ? `<span class="pill ok">${st.gia.map(dLong).join(" e ")} già nel registro</span>` : ""].filter(Boolean).join(" ") || `<span class="muted">Niente da aggiungere</span>`;
+  const dopo = r.tipo === "dafare" && rif && st.ultima && st.ultima > rif;
+  return `<div class="el-riga${r.si ? "" : " off"}">
+    <div class="el-top"><label class="check"><input type="checkbox" id="el-si-${i}" data-elsi="${i}" ${r.si ? "checked" : ""}><b>${esc(r.nome)}</b></label><span class="muted" style="font-size:.82rem">sul foglio</span></div>
+    <label class="field"><span class="label">Cliente nel registro</span><input type="text" id="el-n-${i}" data-elnome="${i}" list="el-clienti" value="${esc(r.cliente)}" autocomplete="off"></label>
+    <div class="el-info">${st.nome ? `<span class="pill ok">Cliente già nel registro</span>` : `<span class="pill warn">Cliente nuovo</span>`}
+      <span class="muted">${st.ultima ? `Ultima visita ${dLong(st.ultima)}` : "Nessuna visita registrata"}</span>
+      ${dopo ? `<span class="pill crit">Siete passati dopo il ${dLong(rif)}: forse è già fatto</span>` : ""}</div>
+    <div class="el-info">${azione}${r.tel ? ` <span class="mono">${esc(r.tel)}</span>` : ""}</div>
+  </div>`;
 }
 function richItem(r, vis, oggi) {
   const v = vis.get(r.cliente) || []; const passato = v.find((x) => x.data >= (r.creata || "9999"));
@@ -2073,6 +2189,8 @@ document.addEventListener("click", (e) => {
   if (t.dataset.delman) { eliminaManuale(t.dataset.delman); return; }
   if (t.dataset.pioggia) { putPioggia(t.dataset.pioggia, t.dataset.val === "1"); return; }
   if (t.dataset.tab) { S.tab = t.dataset.tab; S.editing = null; if (t.dataset.tab === "luoghi") S.scheda = null; try { localStorage.setItem("rg-tab", S.tab); } catch {} render(); return; }
+  if (t.dataset.elannulla) { S.elenco = null; render(); return; }
+  if (t.dataset.elapplica) { t.disabled = true; applicaElenco(); return; }
   if (t.dataset.ctipo) { putCliente(t.dataset.ctipo, { tipo: t.dataset.val, ...(t.dataset.val === "chiamata" ? { pianificato: null } : {}) }); return; }
   if (t.dataset.copy) { const v = t.dataset.copy; try { navigator.clipboard.writeText(v).then(() => flash("Numero copiato: " + v), () => flash("Copia non riuscita: tieni premuto sul numero per copiarlo.")); } catch { flash("Copia non riuscita: tieni premuto sul numero per copiarlo."); } return; }
   if (t.dataset.undofatto) { const c = cliente(t.dataset.undofatto); const f = (c.fatti || []).slice().sort(); f.pop(); putCliente(t.dataset.undofatto, { fatti: f }); return; }
@@ -2200,6 +2318,9 @@ document.addEventListener("change", (e) => {
   }
   if (S.man && t.dataset.man === "data") { S.man.data = t.value || oggiStr(); return; }
   if (t.id === "file" && t.files[0]) importa(t.files[0]);
+  else if (t.id === "elenco-file" && t.files[0]) { caricaElenco(t.files[0]); t.value = ""; }
+  else if (S.elenco && t.dataset.elsi) { S.elenco.righe[+t.dataset.elsi].si = t.checked; render(true); }
+  else if (S.elenco && t.dataset.elnome) { S.elenco.righe[+t.dataset.elnome].cliente = t.value.trim(); render(true); }
   else if (t.dataset.io) { S.io = t.value; S.chi = null; S.importPer = null; try { localStorage.setItem("rg-io", S.io); } catch {} render(); }
   else if (t.dataset.impper) { S.importPer = t.value; render(); }
   else if (t.dataset.rchi) { const r = { ...S.richieste[t.dataset.rchi], chi: t.value }; putRichiesta(t.dataset.rchi, r); }

@@ -144,7 +144,9 @@ function documento(path) {
     onSnapshot: (cb, err) => onSnapshot(r(), (s) => cb(docSnap(s)), err || (() => {})),
   };
 }
-const db = { collection: coll, doc: documento };
+// più documenti in un solo salvataggio (massimo 500 per volta, limite di Firestore)
+async function scrivi(ops) { for (let i = 0; i < ops.length; i += 450) { const b = writeBatch(fs); for (const [path, d] of ops.slice(i, i + 450)) b.set(doc(fs, ...parti(path)), pulito(d)); await b.commit(); } }
+const db = { collection: coll, doc: documento, scrivi };
 
 /* ---------- utente ---------- */
 const nomiVisti = {};
