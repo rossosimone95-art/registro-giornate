@@ -328,6 +328,7 @@ ol.legs li.work { grid-template-columns: minmax(0, 1fr) !important } ol.legs li.
 .sheet-act { display: flex; align-items: center; gap: 14px; min-height: 60px; padding: 10px 16px; box-sizing: border-box; border: 2px solid var(--line); border-radius: 16px; background: var(--surface); color: var(--ink); font: inherit; font-size: 1.1rem; font-weight: 700; text-align: left; text-decoration: none }
 .sheet-act svg { width: 26px; height: 26px; flex: none; fill: none; stroke: var(--accent); stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round }
 .sheet-close { min-height: 52px; border: 0; background: none; font: inherit; font-size: 1.05rem; font-weight: 700; color: var(--muted) }
+.forse { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; padding: 10px 12px; border-radius: 12px; background: var(--warn-soft); color: var(--ink); font-size: .95rem }
 /* arrivo dal cliente */
 .arrivo { display: flex; flex-direction: column; gap: 10px; padding: 16px; border-radius: 20px; background: var(--accent-soft); border: 2px solid var(--accent) }
 .arrivo.dimenticato { background: var(--warn-soft); border-color: var(--warn) }
@@ -1016,6 +1017,7 @@ function render(force) {
   v.innerHTML = scollegato + (flashMsg ? `<div class="notice" style="margin-bottom:16px">${esc(flashMsg)}</div>` : "") +
     (S.tab === "oggi" ? viewOggi() : S.tab === "giorni" ? viewGiorni() : S.tab === "agenda" ? viewAgenda() : S.tab === "luoghi" ? viewClienti() : viewImporta());
   v.insertAdjacentHTML("beforeend", pannelloSosta() + pannelloArrivo());
+  clearTimeout(render.auto); render.auto = setTimeout(autoChiudiRichieste, 2500);
   if (S.scrollTo) { const el = v.querySelector(`[data-sosta="${CSS.escape(S.scrollTo)}"]`); S.scrollTo = null; if (el) el.scrollIntoView({ block: "start", behavior: "smooth" }); }
   for (const [id, val] of Object.entries(bozze)) { const el = document.getElementById(id); if (el && el.value !== val) el.value = val; }
   // nelle file di filtri che scorrono di lato, tieni in vista quello scelto
@@ -1676,12 +1678,42 @@ const cliente = (nome) => S.clienti[slug(nome)] || {};
 function visitePerNome() {
   const m = new Map();
   for (const g of giorniReali()) for (const u of usciteDi(g)) for (const s of sosteDi(u)) {
-    if (s.e - s.s < 20 * 60000) continue;
+    if (s.e - s.s < 10 * 60000) continue; // anche i passaggi veloci (10 min) contano come visita
     const l = luogo(s); if (!l.named) continue;
     (m.get(l.nome) || m.set(l.nome, []).get(l.nome)).push({ data: g.data, s });
   }
   for (const v of m.values()) v.sort((a, b) => b.data.localeCompare(a.data) || b.s.s - a.s.s);
   return m;
+}
+// soste vicine a un cliente ma non collegate a lui (senza nome, o finite su un cliente accanto)
+function forseVisite(nome, dopo) {
+  const pins = Object.values(S.luoghi).filter((l) => l.nome === nome && l.lat != null); if (!pins.length) return [];
+  const out = [], visti = new Set();
+  for (const g of giorniReali()) { if (dopo && g.data <= dopo) continue;
+    for (const u of usciteDi(g)) for (const s of sosteDi(u)) {
+      if (s.e - s.s < 10 * 60000 || s.lat == null) continue;
+      const l = luogo(s); if (l.named && l.nome === nome) continue;
+      if (l.named && l.cat !== "cliente") continue; // vivaio, acquisti, posti personali: non sono visite al cliente
+      const d = Math.min(...pins.map((p) => Engine.dist(s, p))); if (d > (l.named ? 150 : 250)) continue;
+      const k = g.data; if (visti.has(k)) continue; visti.add(k);
+      out.push({ data: g.data, min: Math.round((s.e - s.s) / 60000), d: Math.round(d), come: l.named ? l.nome : null });
+    } }
+  return out.sort((a, b) => b.data.localeCompare(a.data)).slice(0, 2);
+}
+// richieste: si chiudono da sole quando, dopo il giorno della chiamata, risulta una visita al cliente
+let firmaAuto = "";
+function autoChiudiRichieste() {
+  if (!S.ready || !db) return;
+  const vis = visitePerNome(), daChiudere = [];
+  for (const [id, r] of Object.entries(S.richieste)) {
+    if (r.fatta || !r.creata) continue;
+    const v = (vis.get(r.cliente) || []).filter((x) => x.data > r.creata).sort((a, b) => a.data.localeCompare(b.data))[0];
+    if (v) daChiudere.push([id, { ...r, fatta: true, fattaIl: v.data, auto: true }]);
+  }
+  const firma = daChiudere.map(([id, r]) => id + r.fattaIl).join(",");
+  if (!daChiudere.length || firma === firmaAuto) return; firmaAuto = firma;
+  for (const [id, r] of daChiudere) putRichiesta(id, r);
+  flash(daChiudere.length === 1 ? `Richiesta di ${daChiudere[0][1].cliente} segnata fatta: ci siete passati il ${dLong(daChiudere[0][1].fattaIl)}.` : `${daChiudere.length} richieste segnate fatte dalle visite registrate.`);
 }
 function ultimiLavori(v) {
   for (const x of v || []) { const w = S.lavori[lavKey(x.data, x.s.pid)]; if (hasWork(w)) return { data: x.data, w }; }
@@ -1914,7 +1946,7 @@ function richItem(r, vis, oggi) {
   const v = vis.get(r.cliente) || []; const passato = v.find((x) => x.data >= (r.creata || "9999"));
   return `<div class="item${r.urgente ? " urgent" : ""}">
     <div class="item-main">
-      <span class="item-title"><span class="tag">Richiesta</span><b>${esc(r.cliente)}</b>${r.urgente ? `<span class="pill crit">Urgente</span>` : ""}${passato ? `<span class="pill ok">Passato il ${dLong(passato.data)}</span>` : ""}</span>
+      <span class="item-title"><span class="tag">Richiesta</span><b>${esc(r.cliente)}</b>${r.urgente ? `<span class="pill crit">Urgente</span>` : ""}${r.fatta && r.auto ? `<span class="pill ok">Chiusa in automatico</span>` : passato ? `<span class="pill ok">Passato il ${dLong(passato.data)}</span>` : ""}</span>
       ${r.testo ? `<span class="nota">${esc(r.testo)}</span>` : ""}
       ${(r.tel || cliente(r.cliente).tel) ? `<span class="tel"><span class="mono">${esc(r.tel || cliente(r.cliente).tel)}</span><a class="maps" href="tel:${esc((r.tel || cliente(r.cliente).tel).replace(/[^0-9+]/g, ""))}">Chiama</a><button class="linkish" data-copy="${esc(r.tel || cliente(r.cliente).tel)}">Copia</button></span>` : ""}
       <span class="muted" style="font-size:.82rem">Ha chiamato ${r.creata ? dLong(r.creata) + ` · ${ggTra(r.creata, oggi)} giorni fa` : ""}${r.da ? ` · segnata da ${esc(nomeDi(r.da))}` : ""}</span>
@@ -1938,6 +1970,7 @@ function manutItem(m, oggi, inProgramma) {
       <span class="muted" style="font-size:.85rem">${m.ultima ? `Ultima visita ${dLong(m.ultima)} · ${m.gg} giorni fa${m.daMano ? ` · segnata a mano <button class="linkish" data-undofatto="${esc(m.n)}">annulla</button>` : ""}` : "Nessuna visita registrata"}</span>
       <span class="meter" title="${m.gg ?? "–"} giorni su ${m.ogni}"><i class="${stato[0]}" style="width:${ratio / 1.5 * 100}%"></i><b style="left:${100 / 1.5}%"></b></span>
       ${ul ? `<div class="chips">${(ul.w.attivita || []).map((a) => `<span class="chip">${esc(a)}</span>`).join("")}${ul.w.nota ? `<span class="muted" style="font-size:.82rem">${esc(ul.w.nota)}</span>` : ""}</div>` : ""}
+      ${m.ritardo != null && m.ritardo > -3 ? forseVisite(m.n, m.ultima).map((f) => `<div class="forse"><span>Forse ci siete stati <b>${dLong(f.data)}</b>: sosta di ${dur(f.min)} a ${f.d} m${f.come ? `, segnata come ${esc(f.come)}` : ", senza nome"}</span><button class="btn sm" data-sifatto="${esc(m.n)}" data-d="${f.data}">Sì, fatto</button></div>`).join("") : ""}
     </div>
     <div class="item-side">
       <label class="date-pick"><span class="label">Ogni</span><select id="cf-${slug(m.n)}" data-cfreq="${esc(m.n)}">${[...new Set([...FREQ, m.ogni])].sort((a, b) => a - b).map((f) => `<option value="${f}" ${f === m.ogni ? "selected" : ""}>${f} giorni</option>`).join("")}</select></label>
@@ -2164,6 +2197,7 @@ document.addEventListener("click", (e) => {
   const t = e.target.closest("button, a"); if (!t) return;
   if (t.dataset.sosta) { S.sheet = t.dataset.sosta; render(true); return; }
   if (t.dataset.arrivo) { avviaArrivo(); return; }
+  if (t.dataset.sifatto) { const n = t.dataset.sifatto, c = cliente(n); putCliente(n, { fatti: [...new Set([...(c.fatti || []), t.dataset.d])].sort().slice(-30), pianificato: null, chi: null }); flash(`${n}: segnata fatta il ${dLong(t.dataset.d)}.`); return; }
   if (t.dataset.arrchiudipannello) { S.checkin = null; render(true); return; }
   if (t.dataset.arrpid) { confermaArrivo(t.dataset.arrpid); return; }
   if (t.dataset.arrnuovo) { confermaArrivo(null, (document.getElementById("arr-nuovo") || {}).value); return; }
