@@ -329,6 +329,7 @@ ol.legs li.work { grid-template-columns: minmax(0, 1fr) !important } ol.legs li.
 .sheet-act svg { width: 26px; height: 26px; flex: none; fill: none; stroke: var(--accent); stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round }
 .sheet-close { min-height: 52px; border: 0; background: none; font: inherit; font-size: 1.05rem; font-weight: 700; color: var(--muted) }
 .forse { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; padding: 10px 12px; border-radius: 12px; background: var(--warn-soft); color: var(--ink); font-size: .95rem }
+.leg-add { margin-left: 8px; padding: 2px 10px; min-height: 30px; border: 1.5px dashed var(--accent); border-radius: 999px; background: none; color: var(--accent); font: inherit; font-size: .85rem; font-weight: 700 }
 /* arrivo dal cliente */
 .arrivo { display: flex; flex-direction: column; gap: 10px; padding: 16px; border-radius: 20px; background: var(--accent-soft); border: 2px solid var(--accent) }
 .arrivo.dimenticato { background: var(--warn-soft); border-color: var(--warn) }
@@ -730,7 +731,11 @@ function merge() {
       const u = manualeComeUscita(id, x);
       const nome = (S.luoghi[x.pid] || {}).nome;
       const doppio = g.uscite.some((v) => !v._man && (v.soste || []).some((st) => st.e > u.inizio && st.s < u.fine && nome && (S.luoghi[st.pid] || {}).nome === nome));
-      if (!doppio) g.uscite = [...g.uscite, u].sort((a, b) => a.inizio - b.inizio);
+      if (doppio) continue;
+      // dentro un'uscita già registrata (sosta che la Cronologia non ha preso): diventa una sua sosta, senza contare due volte le ore
+      const dentro = g.uscite.find((v) => !v._man && v.inizio <= u.inizio && v.fine >= u.fine);
+      if (dentro) g.uscite = g.uscite.map((v) => (v === dentro ? { ...v, soste: [...(v.soste || []), { ...u.soste[0], _man: id }].sort((a, b) => a.s - b.s) } : v));
+      else g.uscite = [...g.uscite, u].sort((a, b) => a.inizio - b.inizio);
     }
   }
   S.giorni = m;
@@ -1108,9 +1113,13 @@ function offsetCalc(data) {
 }
 // ---------- inserimento a mano ----------
 S.man = null; // stato del modulo aperto
-function apriManuale() {
-  const now = new Date(); const hh = String(now.getHours()).padStart(2, "0");
-  S.man = { data: oggiStr(), persone: persone().map((x) => x.id), pid: null, nuovo: "", da: "", a: "", tab: "clienti", cerca: "", att: [], nota: "" };
+function apriManuale(pre) {
+  S.man = { data: oggiStr(), persone: persone().map((x) => x.id), pid: null, nuovo: "", da: "", a: "", tab: "clienti", cerca: "", att: [], nota: "", ...(pre || {}) };
+}
+// tratto di strada; se è lungo, un piccolo "+" per aggiungere una sosta che la Cronologia non ha preso
+function legRow(g, a, b) {
+  const gap = (b - a) / 60000; if (gap < 1) return "";
+  return `<li class="leg"><span class="t"></span><span>${dur(gap)} di strada${gap >= 30 ? ` <button class="leg-add" data-legadd="1" data-data="${g.data}" data-a="${a}" data-b="${b}" aria-label="Aggiungi una sosta in questo tratto">+ sosta</button>` : ""}</span></li>`;
 }
 function luoghiPerScelta() {
   const per = new Map();
@@ -1434,6 +1443,7 @@ function pannelloSosta() {
     ${man ? "" : `<button class="sheet-act" data-edit="${s.pid}" data-lat="${s.lat}" data-lng="${s.lng}" data-dopo="${esc(S.sheet)}">${IC.nome}${l.named ? "Cambia nome al posto" : "Dai un nome al posto"}</button>`}
     ${s.lat != null ? `<a class="sheet-act" target="_blank" rel="noopener" href="${mapsUrl(s)}">${IC.maps}Apri in Google Maps</a>` : ""}
     ${S.admin && !man ? `<button class="sheet-act" data-corr="${esc(corrId(s))}" data-dopo="${esc(S.sheet)}">${IC.corr}${l.corretto ? "Correzione: era da un altro cliente" : "Era da un altro cliente"}</button>` : ""}
+    ${man ? `<button class="sheet-act" data-delmansheet="${esc(man)}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg>Togli questa sosta (inserita a mano)</button>` : ""}
     <button class="sheet-close" data-sheetclose="1">Chiudi</button>
   </div>`;
 }
@@ -1457,7 +1467,7 @@ function dettaglioUnito(g) {
   const idxDi = (st) => { let k = T.findIndex((t) => st.s >= t.ta && st.s < t.tb); if (k < 0) k = st.s < T[0].ta ? 0 : T.length - 1;
     if (!T[k].ins && T[k + 1] && T[k + 1].ins && T[k + 1].ta - st.s <= 600000 && st.e > T[k + 1].ta) k++; return k; };
   const sosteK = unita.map((u) => u.soste.map((st) => ({ st, k: idxDi(st) })));
-  const lista = (ui, k0, k1) => sosteK[ui].filter((x) => x.k >= k0 && x.k <= k1).map((x) => rigaSosta(g.data, x.st, x.st.e, "")).join("");
+  const lista = (ui, k0, k1) => sosteK[ui].filter((x) => x.k >= k0 && x.k <= k1).map((x) => rigaSosta(g.data, x.st, x.st.e, "", x.st._man)).join("");
   let k = 0, primo = true;
   while (k < T.length) {
     if (T[k].ins) {
@@ -1552,12 +1562,12 @@ function dayDetail(g) {
     let prev = u.inizio;
     for (const s of sosteDi(u)) {
       const gap = (s.s - prev) / 60000;
-      if (gap >= 1) items += `<li class="leg"><span class="t"></span><span>${dur(gap)} di strada</span></li>`;
-      items += rigaSosta(g.data, s, s.e, "");
+      items += legRow(g, prev, s.s);
+      items += rigaSosta(g.data, s, s.e, "", s._man);
       prev = s.e;
     }
     const gap = (u.fine - prev) / 60000;
-    if (gap >= 1) items += `<li class="leg"><span class="t"></span><span>${dur(gap)} di strada</span></li>`;
+    items += legRow(g, prev, u.fine);
     items += `<li><span class="t">${hhmm(u.fine)}</span><span class="home-line">${u.rientroNoto ? "Rientro a casa" : "Fine tragitto"}</span></li>`;
     return `<div class="outing">
       <div class="outing-head">
@@ -2211,6 +2221,8 @@ document.addEventListener("click", (e) => {
   { const ae = document.activeElement, f = t.closest("form"); if (ae && ae !== t && /^(INPUT|TEXTAREA)$/.test(ae.tagName) && !(f && f.contains(ae))) ae.blur(); }
   if (t.hasAttribute("data-online")) { const k = t.dataset.online; S.popNome = t.dataset.nome; S.popOnline = S.popOnline === k ? null : k; disegnaOnline(); return; }
   if (t.dataset.onlineChiudi) { S.popOnline = null; disegnaOnline(); return; }
+  if (t.dataset.legadd) { apriManuale({ data: t.dataset.data, da: hhmm(+t.dataset.a), a: hhmm(+t.dataset.b) }); render(true); const f = document.getElementById("man-form"); if (f) f.scrollIntoView({ block: "start", behavior: "smooth" }); flash("Scegli il posto e correggi gli orari se serve."); return; }
+  if (t.dataset.delmansheet) { if (confirm("Tolgo questa sosta inserita a mano?")) eliminaManuale(t.dataset.delmansheet); return; }
   if (t.dataset.manapri) { apriManuale(); S.tab = "giorni"; render(); const f = document.getElementById("man-form"); if (f) f.scrollIntoView({ block: "start" }); return; }
   if (t.dataset.manchiudi) { S.man = null; render(); return; }
   if (t.dataset.mantab) { S.man.tab = t.dataset.mantab; render(); return; }
