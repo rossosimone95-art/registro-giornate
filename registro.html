@@ -319,6 +319,26 @@ ol.legs li.work { grid-template-columns: minmax(0, 1fr) !important } ol.legs li.
 .sheet-act { display: flex; align-items: center; gap: 14px; min-height: 60px; padding: 10px 16px; box-sizing: border-box; border: 2px solid var(--line); border-radius: 16px; background: var(--surface); color: var(--ink); font: inherit; font-size: 1.1rem; font-weight: 700; text-align: left; text-decoration: none }
 .sheet-act svg { width: 26px; height: 26px; flex: none; fill: none; stroke: var(--accent); stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round }
 .sheet-close { min-height: 52px; border: 0; background: none; font: inherit; font-size: 1.05rem; font-weight: 700; color: var(--muted) }
+/* arrivo dal cliente */
+.arrivo { display: flex; flex-direction: column; gap: 10px; padding: 16px; border-radius: 20px; background: var(--accent-soft); border: 2px solid var(--accent) }
+.arrivo.dimenticato { background: var(--warn-soft); border-color: var(--warn) }
+.arrivo-t { font-size: 1.3rem; display: flex; align-items: center; gap: 10px }
+.arrivo-sub { color: var(--muted); font-size: 1rem }
+.arrivo-dot { width: 12px; height: 12px; border-radius: 6px; background: var(--accent); flex: none; animation: pulsa 1.6s ease-in-out infinite }
+@keyframes pulsa { 50% { opacity: .3 } }
+@media (prefers-reduced-motion: reduce) { .arrivo-dot { animation: none } }
+.arrivo-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px }
+.oggi-mano { justify-self: start; padding: 6px 2px }
+.sheet { max-height: 88vh; overflow-y: auto }
+.sheet-wait { font-size: 1.15rem; margin: 8px 4px 16px }
+.sheet-act.primo { border-color: var(--accent); background: var(--accent-soft) }
+.sheet-act .sw { width: 16px; height: 16px; flex: none }
+.arr-altri summary { cursor: pointer; font-weight: 700; padding: 10px 4px; color: var(--accent) }
+.arr-altri input { width: 100%; box-sizing: border-box; padding: 10px 12px; border: 2px solid var(--line); border-radius: 12px; font: inherit; background: var(--surface); color: inherit; min-height: 46px }
+.arr-lista { display: flex; flex-direction: column; max-height: 36vh; overflow-y: auto; margin: 8px 0; border: 2px solid var(--line); border-radius: 14px }
+.arr-voce { text-align: left; padding: 12px 14px; min-height: 48px; border: 0; border-top: 1px solid var(--line); background: none; font: inherit; font-weight: 700; color: inherit }
+.arr-voce:first-child { border-top: 0 }
+.arr-nuovo { display: flex; gap: 8px } .arr-nuovo input { flex: 1 1 auto; min-width: 0 }
 /* ===== Tema "Grande e semplice": scritte grandi, contrasto forte, pulsanti comodi ===== */
 :root {
   --bg: #FFFFFF; --surface: #FFFFFF; --ink: #111111; --muted: #444444; --line: #E2E2E2;
@@ -645,7 +665,8 @@ const corrId = (p) => `${dataDi(p.s)}__${p.pid}__${p.s}`;
 const dataDi = (ms) => new Date(ms).toLocaleDateString("sv-SE", { timeZone: TZ });
 // inserimenti a mano: una sosta per documento, unita alla giornata della persona
 function manualeComeUscita(id, m) {
-  const s = Date.parse(m.data + "T" + m.da + ":00" + offset(m.data)), e = Date.parse(m.data + "T" + m.a + ":00" + offset(m.data));
+  const s = m.inizio || Date.parse(m.data + "T" + m.da + ":00" + offset(m.data));
+  const e = m.aperta ? Math.max(s + 60000, Math.min(Date.now(), s + 12 * 3.6e6)) : (m.fine || Date.parse(m.data + "T" + m.a + ":00" + offset(m.data)));
   return { id: "man-" + id, _man: id, auto: "lavoro", inizio: s, fine: e, partenzaNota: true, rientroNoto: true,
     soste: [{ s, e, pid: m.pid, lat: m.lat ?? null, lng: m.lng ?? null }] };
 }
@@ -985,7 +1006,7 @@ function render(force) {
   const scollegato = S.ready && !db ? `<div class="notice warn" style="margin-bottom:16px"><b>Non sei collegato al Registro condiviso.</b> Quello che carichi o scrivi qui resta solo su questo telefono e gli altri non lo vedono. Apri il Registro dall'app Claude, entrando con il tuo account, e ricarica lì la Cronologia.</div>` : "";
   v.innerHTML = scollegato + (flashMsg ? `<div class="notice" style="margin-bottom:16px">${esc(flashMsg)}</div>` : "") +
     (S.tab === "oggi" ? viewOggi() : S.tab === "giorni" ? viewGiorni() : S.tab === "agenda" ? viewAgenda() : S.tab === "luoghi" ? viewClienti() : viewImporta());
-  v.insertAdjacentHTML("beforeend", pannelloSosta());
+  v.insertAdjacentHTML("beforeend", pannelloSosta() + pannelloArrivo());
   if (S.scrollTo) { const el = v.querySelector(`[data-sosta="${CSS.escape(S.scrollTo)}"]`); S.scrollTo = null; if (el) el.scrollIntoView({ block: "start", behavior: "smooth" }); }
   for (const [id, val] of Object.entries(bozze)) { const el = document.getElementById(id); if (el && el.value !== val) el.value = val; }
   // nelle file di filtri che scorrono di lato, tieni in vista quello scelto
@@ -1177,6 +1198,99 @@ async function salvaManuale() {
   S.man = null; S.mese = "60"; S.aperti.add(dayId(M.persone.includes(S.io) ? S.io : M.persone[0], M.data));
   flash(`Salvato: ${nome}, ${dLong(M.data)} ${doc.da}–${doc.a}.`);
 }
+// ---------- "Siamo arrivati": posizione del telefono + ora, poi "Ce ne andiamo" ----------
+S.checkin = null; // { stato: "cerco" | "scegli" | "errore", pos, msg, cerca, persone, nuovo }
+const hhmmOra = (ms) => hhmm(ms);
+const apertaMia = () => Object.entries(S.manuali).find(([, m]) => m.aperta && (m.persone || [m.persona]).includes(S.io));
+function viciniA(pos, raggio = 150) {
+  const L = luoghiPerScelta(), out = [];
+  for (const x of [...L.clienti, ...L.altri]) {
+    let best = Infinity;
+    for (const [, l] of Object.entries(S.luoghi)) if (l.nome === x.nome && l.lat != null) best = Math.min(best, Engine.dist(pos, l));
+    if (best <= raggio) out.push({ ...x, d: Math.round(best) });
+  }
+  return out.sort((a, b) => a.d - b.d);
+}
+function avviaArrivo() {
+  S.checkin = { stato: "cerco", persone: persone().map((x) => x.id), cerca: "" }; render(true);
+  if (!navigator.geolocation) { S.checkin = { ...S.checkin, stato: "scegli", msg: "Questo telefono non dà la posizione: scegli il cliente." }; render(true); return; }
+  navigator.geolocation.getCurrentPosition((p) => {
+    if (!S.checkin) return;
+    const pos = { lat: p.coords.latitude, lng: p.coords.longitude, acc: Math.round(p.coords.accuracy || 0) };
+    S.checkin = { ...S.checkin, stato: "scegli", pos, vicini: viciniA(pos) }; render(true);
+  }, (e) => {
+    if (!S.checkin) return;
+    const msg = e.code === 1 ? "Il telefono non ha dato il permesso per la posizione. Puoi sceglierlo qui sotto, e attivare la posizione per questa app nelle impostazioni del telefono." : "Non trovo la posizione adesso: scegli il cliente qui sotto.";
+    S.checkin = { ...S.checkin, stato: "scegli", msg }; render(true);
+  }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 30000 });
+}
+async function confermaArrivo(pid, nomeNuovo) {
+  const C = S.checkin; if (!C) return;
+  if (!C.persone.length) { flash("Scegli chi c'è."); return; }
+  const pos = C.pos && C.pos.acc <= 80 ? C.pos : null, now = Date.now();
+  if (!pid) {
+    const nome = nomeUguale((nomeNuovo || "").trim()); if (!nome) { flash("Scrivi il nome del cliente."); return; }
+    const esiste = Object.entries(S.luoghi).find(([, l]) => l.nome === nome);
+    pid = esiste ? esiste[0] : "m-" + slug(nome) + "-" + now.toString(36);
+    if (!esiste) await putLuogo(pid, { nome, categoria: "cliente", lat: pos ? pos.lat : null, lng: pos ? pos.lng : null });
+  }
+  const l = S.luoghi[pid] || {};
+  // la prima volta che siete da un cliente con il GPS buono, la sua posizione vera resta salvata
+  const precisa = Object.entries(S.luoghi).some(([id, x]) => x.nome === l.nome && id.startsWith("m-") && x.lat != null);
+  if (pos && l.nome && !precisa && pos.acc <= 50) await putLuogo("m-" + slug(l.nome) + "-" + now.toString(36), { nome: l.nome, categoria: l.categoria || "cliente", lat: pos.lat, lng: pos.lng });
+  const data = Engine.localDate(now), id = "m" + now.toString(36);
+  const doc = { data, persone: C.persone, persona: C.persone.includes(S.io) ? S.io : C.persone[0], pid, lat: pos ? pos.lat : (l.lat ?? null), lng: pos ? pos.lng : (l.lng ?? null),
+    da: hhmmOra(now), a: null, inizio: now, aperta: true, creatoDa: S.io };
+  S.checkin = null; S.manuali = { ...S.manuali, [id]: doc }; merge(); render(true);
+  if (db) { try { await db.doc("manuali/" + id).set(doc); } catch (e) { flash("Non salvato: " + (e.message || e.code)); return; } } else saveLocal();
+  flash(`Siete da ${l.nome || nomeNuovo} dalle ${doc.da}.`);
+}
+async function chiudiArrivo(id, quando) {
+  const m = S.manuali[id]; if (!m) return;
+  const fine = quando || Date.now();
+  if (fine <= m.inizio) { flash("L'ora di partenza deve essere dopo l'arrivo."); return; }
+  const doc = { ...m, aperta: false, fine, a: hhmmOra(fine) };
+  S.manuali = { ...S.manuali, [id]: doc }; merge(); render(true);
+  if (db) { try { await db.doc("manuali/" + id).set(doc); } catch (e) { flash("Non salvato: " + (e.message || e.code)); return; } } else saveLocal();
+  flash(`Fatto: ${(S.luoghi[m.pid] || {}).nome || "sosta"} ${m.da}–${doc.a} (${dur((fine - m.inizio) / 60000)}).`);
+}
+function cardArrivo() {
+  const a = apertaMia(); if (!a) return "";
+  const [id, m] = a, nome = (S.luoghi[m.pid] || {}).nome || "Cliente", oggi = m.data === oggiStr();
+  if (!oggi) return `<div class="arrivo dimenticato"><div class="arrivo-t">Da ${esc(nome)} ${dLong(m.data)} dalle ${m.da}: non l'avete chiusa.</div>
+    <label class="field"><span class="label">A che ora siete andati via?</span><input type="time" id="arr-fine-${id}" value="${hhmmOra(Math.min(m.inizio + 2 * 3.6e6, Date.parse(m.data + "T20:00:00" + offset(m.data))))}"></label>
+    <button class="big-btn primary" data-arrfine="${id}"><span class="bi">${IC.lav}</span>Salva l'ora di partenza</button></div>`;
+  const min = (Date.now() - m.inizio) / 60000;
+  return `<div class="arrivo"><div class="arrivo-t"><span class="arrivo-dot"></span>Siete da <b>${esc(nome)}</b></div>
+    <div class="arrivo-sub">dalle ${m.da} · ${dur(min)}${(m.persone || []).length ? " · " + esc(m.persone.map(nomeDi).join(", ")) : ""}</div>
+    <button class="big-btn primary" data-arrchiudi="${id}"><span class="bi"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 12H3M10 7l-5 5 5 5M21 4v16"/></svg></span>Ce ne andiamo</button>
+    <div class="arrivo-row"><button class="btn ghost" data-lav="${lavKey(m.data, m.pid)}" data-at="${m.inizio}">${hasWork(S.lavori[lavKey(m.data, m.pid)]) ? "Modifica i lavori svolti" : "Segna i lavori svolti"}</button><button class="linkish" data-arrannulla="${id}">Annulla, non eravamo qui</button></div>
+    ${S.lavEdit === lavKey(m.data, m.pid) && S.lavAt === String(m.inizio) ? lavForm(lavKey(m.data, m.pid), m.data, { pid: m.pid, s: m.inizio }, S.lavori[lavKey(m.data, m.pid)], false) : ""}</div>`;
+}
+function pannelloArrivo() {
+  const C = S.checkin; if (!C) return "";
+  const chi = `<div class="field"><span class="label">Chi c'è</span><div class="chips">${persone().map((x) => `<label class="check"><input type="checkbox" data-arrp="${x.id}" ${C.persone.includes(x.id) ? "checked" : ""}>${esc(x.nome)}</label>`).join("")}</div></div>`;
+  let corpo;
+  if (C.stato === "cerco") corpo = `<p class="sheet-wait">Cerco dove siete…</p>`;
+  else {
+    const v = C.vicini || [], q = (C.cerca || "").trim().toLowerCase();
+    const L = luoghiPerScelta(), altri = L.clienti.filter((x) => !v.some((y) => y.nome === x.nome) && (!q || x.nome.toLowerCase().includes(q)));
+    corpo = `${C.msg ? `<p class="notice">${esc(C.msg)}</p>` : ""}
+      ${C.pos && C.pos.acc > 80 ? `<p class="muted">La posizione è poco precisa (±${C.pos.acc} m): controlla il cliente.</p>` : ""}
+      ${v.length ? `<span class="label">${v.length === 1 ? "Siete qui?" : "Qui vicino"}</span>${v.slice(0, 3).map((x, i) => `<button class="sheet-act${i === 0 ? " primo" : ""}" data-arrpid="${esc(x.pid)}"><span class="sw ${CATS[x.cat].cls}"></span>${esc(x.nome)}<span class="muted" style="margin-left:auto;font-size:.9rem">${x.d} m</span></button>`).join("")}`
+        : C.pos ? `<p class="muted" style="margin:0">Nessun cliente salvato qui vicino.</p>` : ""}
+      ${chi}
+      <details class="arr-altri" ${v.length ? "" : "open"}><summary>${v.length ? "È un altro cliente" : "Scegli il cliente"}</summary>
+        <input id="arr-cerca" type="search" placeholder="Cerca per nome" value="${esc(C.cerca || "")}" data-arrcerca="1" autocomplete="off">
+        <div class="arr-lista">${altri.slice(0, 40).map((x) => `<button class="arr-voce" data-arrpid="${esc(x.pid)}">${esc(x.nome)}</button>`).join("") || `<p class="muted">Nessun cliente con questo nome.</p>`}</div>
+        <div class="arr-nuovo"><input id="arr-nuovo" placeholder="Cliente nuovo: scrivi il nome" autocomplete="off"><button class="btn" data-arrnuovo="1">Aggiungi</button></div>
+      </details>`;
+  }
+  return `<button class="sheet-bg" data-arrchiudipannello="1" aria-label="Chiudi"></button>
+  <div class="sheet" role="dialog" aria-label="Siamo arrivati"><div class="sheet-head"><div><b>Siamo arrivati</b><span class="muted">${hhmmOra(Date.now())}${C.pos ? ` · posizione presa (±${C.pos.acc} m)` : ""}</span></div></div>
+    ${corpo}<button class="sheet-close" data-arrchiudipannello="1">Annulla</button></div>`;
+}
+setInterval(() => { if (apertaMia() && S.tab === "oggi" && document.visibilityState === "visible") render(); }, 60000);
 async function eliminaManuale(id) {
   const next = { ...S.manuali }; delete next[id]; S.manuali = next; S.confMan = null; merge(); render();
   if (db) { try { await db.doc("manuali/" + id).delete(); } catch {} } else saveLocal();
@@ -1734,8 +1848,9 @@ function viewOggi() {
   <div class="section oggi-head">
     <div><div class="oggi-date">${titolo}</div><h2 class="oggi-title">Ciao ${esc(nomeDi(S.io))}</h2></div>
     <div class="oggi-btns">
-      <button class="big-btn primary" data-manapri="1"><span class="bi"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg></span>Siamo arrivati da un cliente</button>
+      ${cardArrivo() || `<button class="big-btn primary" data-arrivo="1"><span class="bi"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg></span>Siamo arrivati da un cliente</button>`}
       <button class="big-btn" data-go="agenda" data-focus="r-cliente"><span class="bi"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/></svg></span>Ha chiamato un cliente</button>
+      <button class="linkish oggi-mano" data-manapri="1">Segna a mano una visita già fatta</button>
     </div>
   </div>
   <div class="section">
@@ -1932,6 +2047,14 @@ async function esportaCsv() {
 document.addEventListener("click", (e) => {
   const t = e.target.closest("button, a"); if (!t) return;
   if (t.dataset.sosta) { S.sheet = t.dataset.sosta; render(true); return; }
+  if (t.dataset.arrivo) { avviaArrivo(); return; }
+  if (t.dataset.arrchiudipannello) { S.checkin = null; render(true); return; }
+  if (t.dataset.arrpid) { confermaArrivo(t.dataset.arrpid); return; }
+  if (t.dataset.arrnuovo) { confermaArrivo(null, (document.getElementById("arr-nuovo") || {}).value); return; }
+  if (t.dataset.arrchiudi) { chiudiArrivo(t.dataset.arrchiudi); return; }
+  if (t.dataset.arrfine) { const m = S.manuali[t.dataset.arrfine], v = (document.getElementById("arr-fine-" + t.dataset.arrfine) || {}).value;
+    if (!m || !oraValida(v)) { flash("Scrivi l'ora, per esempio 17:30."); return; } chiudiArrivo(t.dataset.arrfine, Date.parse(m.data + "T" + v + ":00" + offset(m.data))); return; }
+  if (t.dataset.arrannulla) { if (confirm("Tolgo questa visita?")) eliminaManuale(t.dataset.arrannulla); return; }
   if (t.dataset.sheetclose) { S.sheet = null; render(true); return; }
   if (t.closest(".sheet")) { S.sheet = null; if (t.dataset.dopo) S.scrollTo = t.dataset.dopo; if (t.tagName === "A") { setTimeout(() => render(true), 0); return; } }
   // su iPhone toccare un tasto non sempre toglie il cursore dal campo di prima: senza questo la pagina aspetta e il menu non si apre
@@ -2052,7 +2175,9 @@ document.addEventListener("submit", (e) => {
   }
 });
 document.addEventListener("input", (e) => {
-  const t = e.target; if (!S.man) return;
+  const t = e.target;
+  if (S.checkin && t.dataset.arrcerca) { S.checkin.cerca = t.value; const pos = t.selectionStart; render(true); const i = document.getElementById("arr-cerca"); if (i) { i.focus(); i.setSelectionRange(pos, pos); const d = i.closest("details"); if (d) d.open = true; } return; }
+  if (!S.man) return;
   if (t.dataset.manora) {
     const d = t.value.replace(/\D/g, "").slice(0, 4);
     const v = d.length === 4 ? d.slice(0, 2) + ":" + d.slice(2) : d;
@@ -2065,6 +2190,7 @@ document.addEventListener("input", (e) => {
 });
 document.addEventListener("change", (e) => {
   const t = e.target;
+  if (S.checkin && t.dataset.arrp) { const id = t.dataset.arrp; S.checkin.persone = t.checked ? [...new Set([...S.checkin.persone, id])] : S.checkin.persone.filter((x) => x !== id); return; }
   if (S.man && t.dataset.manp) { const id = t.dataset.manp; S.man.persone = t.checked ? [...new Set([...S.man.persone, id])] : S.man.persone.filter((x) => x !== id); return; }
   if (S.man && t.dataset.manatt) { const a = t.dataset.manatt; S.man.att = t.checked ? [...new Set([...S.man.att, a])] : S.man.att.filter((x) => x !== a); return; }
   if (S.man && t.dataset.manora) { // all'uscita dal campo: 730 → 07:30, 7 → 07:00
