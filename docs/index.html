@@ -39,7 +39,7 @@ window.__fb = {};
 window.__fbReady = new Promise(function (ok, ko) { window.__fb.resolve = ok; window.__fb.reject = ko; });
 window.claude = { use: function (nome) { return window.__fbReady.then(function (api) { return api.use(nome); }); } };
 </script>
-<script type="module" src="shim.js?v=20261105140501"></script>
+<script type="module" src="shim.js?v=20261107180236"></script>
 </head>
 <body>
 <div id="accesso"><div class="acc-card">
@@ -377,6 +377,7 @@ ol.legs li.work { grid-template-columns: minmax(0, 1fr) !important } ol.legs li.
 .sheet-close { min-height: 52px; border: 0; background: none; font: inherit; font-size: 1.05rem; font-weight: 700; color: var(--muted) }
 .forse { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; padding: 10px 12px; border-radius: 12px; background: var(--warn-soft); color: var(--ink); font-size: .95rem }
 .leg-add { margin-left: 8px; padding: 2px 10px; min-height: 30px; border: 1.5px dashed var(--accent); border-radius: 999px; background: none; color: var(--accent); font: inherit; font-size: .85rem; font-weight: 700 }
+.solo-lavoro { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px }
 /* arrivo dal cliente */
 .arrivo { display: flex; flex-direction: column; gap: 10px; padding: 16px; border-radius: 20px; background: var(--accent-soft); border: 2px solid var(--accent) }
 .arrivo.dimenticato { background: var(--warn-soft); border-color: var(--warn) }
@@ -1091,7 +1092,10 @@ function viewGiorni() {
   if (!months.length) return S.ready ? chiBar + (S.man ? viewManuale() : `<button class="btn add-man" data-manapri="1">+ Aggiungi a mano dove siamo stati</button>`) + `<div class="empty"><h2>Nessuna giornata di ${esc(vista() === "tutti" ? "nessuno" : nomeDi(vista()))}</h2><p>Carica l'export della Cronologia dalla scheda <b>Impostazioni</b>: qui compariranno le tue giornate.</p><button class="btn" data-go="importa">Importa la Cronologia</button></div>`
     : `<div class="empty">Carico il registro…</div>`;
   if (!S.mese || !(PERIODI[S.mese] || months.includes(S.mese))) S.mese = "60";
-  const days = giorniVisti().filter((g) => inPeriodo(g.data) && usciteDi(g).length).sort((a, b) => b.data.localeCompare(a.data) || a.persona.localeCompare(b.persona));
+  const tutteLe = giorniVisti().filter((g) => inPeriodo(g.data) && usciteDi(g).length);
+  // "Solo giornate di lavoro": nasconde i giorni senza nessuna uscita contata come lavoro (sabati, domeniche, ferie…)
+  const days = tutteLe.filter((g) => !S.soloLavoro || usciteDi(g).some((u) => incluso(g, u))).sort((a, b) => b.data.localeCompare(a.data) || a.persona.localeCompare(b.persona));
+  const nascoste = new Set(tutteLe.filter((g) => !days.includes(g)).map((g) => g.data)).size;
   let tot = 0, strada = 0, nGiorni = 0; const perLuogo = new Map();
   for (const g of days) {
     const st = statDay(g); if (!st.lavorato) continue;
@@ -1123,6 +1127,7 @@ function viewGiorni() {
   <div class="section">
     <div class="months" role="group" aria-label="Persona">${[...persone(), { id: "tutti", nome: "Tutti" }].map((x) => `<button data-chi="${x.id}" aria-pressed="${x.id === vista()}">${esc(x.nome)}</button>`).join("")}</div>
     <div class="months" role="group" aria-label="Periodo">${Object.entries(PERIODI).map(([k, v]) => `<button data-mese="${k}" aria-pressed="${k === S.mese}">${v}</button>`).join("")}${months.slice().reverse().map((m) => `<button data-mese="${m}" aria-pressed="${m === S.mese}">${mLabel(m)}</button>`).join("")}</div>
+    <div class="solo-lavoro"><button class="toggle" role="switch" aria-checked="${S.soloLavoro}" data-sololavoro="1"><i></i>Solo giornate di lavoro</button>${S.soloLavoro && nascoste ? `<span class="muted">${nascoste === 1 ? "1 giornata nascosta" : `${nascoste} giornate nascoste`}</span>` : ""}</div>
     <div class="stats">
       <div><span class="label">Giornate di lavoro</span><span class="big">${nGiorni}</span></div>
       <div><span class="label">Ore fuori casa</span><span class="big">${ore(tot)}</span></div>
@@ -2254,6 +2259,7 @@ document.addEventListener("click", (e) => {
   const t = e.target.closest("button, a"); if (!t) return;
   if (t.dataset.sosta) { S.sheet = t.dataset.sosta; render(true); return; }
   if (t.dataset.arrivo) { avviaArrivo(); return; }
+  if (t.dataset.sololavoro) { S.soloLavoro = !S.soloLavoro; try { localStorage.setItem("rg-sololavoro", S.soloLavoro ? "1" : "0"); } catch {} render(true); return; }
   if (t.dataset.sifatto) { const n = t.dataset.sifatto, c = cliente(n); putCliente(n, { fatti: [...new Set([...(c.fatti || []), t.dataset.d])].sort().slice(-30), pianificato: null, chi: null }); flash(`${n}: segnata fatta il ${dLong(t.dataset.d)}.`); return; }
   if (t.dataset.arrchiudipannello) { S.checkin = null; render(true); return; }
   if (t.dataset.arrpid) { confermaArrivo(t.dataset.arrpid); return; }
@@ -2433,6 +2439,8 @@ document.addEventListener("drop", (e) => { const d = e.target.closest && e.targe
 document.addEventListener("toggle", (e) => { if (e.target.classList && e.target.classList.contains("lontane")) S.lontaneAperte = e.target.open; }, true);
 document.addEventListener("focusin", (e) => { if (e.target.closest && e.target.closest(".editor")) S.editing = S.editing || e.target.closest(".editor").dataset.form; });
 
+S.soloLavoro = true;
+try { S.soloLavoro = localStorage.getItem("rg-sololavoro") !== "0"; } catch {}
 try { const t = localStorage.getItem("rg-tab"); if (t) S.tab = t; const io = localStorage.getItem("rg-io"); if (io) S.io = io; } catch {}
 window.__registro = { S, render: (f) => render(f), flash, persone }; // per l'app installabile
 render();
